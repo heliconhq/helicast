@@ -42,7 +42,8 @@ specific branch! This set up will make your project less reproducible.
 
 If you want to develop `helicast`, you can do so quite easily :) 
 1. Clone the repo on your local machine `git clone git@gitlab.com:trelltech/data-science/helicast.git`
-2. Run the bash script `./conda_setup.sh`
+2. Navigate to the downloaded repo `cd helicast`
+3. Run the bash script `./conda_setup.sh`
 
 The script will create an environment `helicast` in which python 3.10 and `helicast`
 dependencies will be installed and `helicast` will be installed in editable mode. You can
