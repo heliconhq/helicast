@@ -1,0 +1,19 @@
+# The Docker image that will be used to build your app
+image: python:3.10-alpine
+
+stages:
+  - deploy
+
+pages:
+  tags:
+    - sphinx
+  stage: deploy
+  script:
+    - python3 -m pip install sphinx sphinx-design pydata-sphinx-theme
+    - sphinx-build -b html docs/source/ public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main # 'master' was renamed to 'main'
+    - lea/docs
