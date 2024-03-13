@@ -9,7 +9,7 @@ pages:
     - sphinx
   stage: deploy
   script:
-    - python3 -m pip install sphinx sphinx-design pydata-sphinx-theme
+    - python3 -m pip install -e '.[dev]'
     - sphinx-build -b html docs/source/ public/
   artifacts:
     paths:
