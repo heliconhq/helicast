@@ -89,9 +89,8 @@ lint = [
 ]
 docs = [
     "sphinx",
-    "sphinx-book-theme",
-    "sphinx-rtd-theme",
     "pydata-sphinx-theme",
+    "sphinx-design",
     "nbsphinx",
     "ipython",
     "jupyter",
