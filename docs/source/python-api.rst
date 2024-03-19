@@ -8,6 +8,7 @@ Python API
    :titlesonly:
    :caption: Data Processing
 
+   python-api/data_processing/TestClass.rst
    python-api/data_processing/add_future_columns.rst
    python-api/data_processing/add_lagged_columns.rst
 

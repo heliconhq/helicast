@@ -72,18 +72,17 @@ html_theme_options = {
     ### Toc options
     # "collapse_navigation": False,
     # "sticky_navigation": False,
-    # "navigation_depth": -1,
     # "includehidden": True,
     # "titles_only": False,
     # "external_links": [
     #    {"name": "link-one-name", "url": "https://<link-one>"},
     #    {"name": "link-two-name", "url": "https://<link-two>"},
     # ],
-    # "show_nav_level": 1,
-    # "navigation_depth": 2,
-    # "show_toc_level": 2,
+    # "show_nav_level": 3,
+    # "navigation_depth": 3,
+    "show_toc_level": 2,
     # "secondary_sidebar_items": ["page-toc", "sourcelink"],
-    "collapse_navigation": True
+    "collapse_navigation": True,
 }
 
 
