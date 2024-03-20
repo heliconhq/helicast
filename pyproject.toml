@@ -34,6 +34,7 @@ dependencies = [
     "pydantic>=2.0",
     "typing_extensions",
     "pandera",
+    "holidays",
      
     "pandas>=2.0",
     "pyarrow",
