@@ -7,13 +7,35 @@ Welcome to Helicast's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
+   :hidden:
 
-   .. doc1.rst
-   .. doc2.rst
-   .. doc3.rst
+   getting-started.rst
+   python-api.rst
+   development.rst
 
+
+.. card:: Getting Started
+   :link: getting-started
+   :link-type: ref
+
+   Get started with helicast: install the package and see how you can integrate it
+   in your projects.
+
+.. card:: Python API
+   :link: python-api
+   :link-type: ref
+
+   Contains a detailed description of the helicast Python API, which describes how
+   the methods work and which parameters can be used. 
+
+.. card:: Development
+   :link: development
+   :link-type: ref
+
+   Contains a description of how to contribute to the helicast project, the internal
+   conventions and everything related to development.
 
 
 Indices and tables
