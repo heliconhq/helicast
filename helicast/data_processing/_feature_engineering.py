@@ -5,6 +5,7 @@ from typing import List, Literal, Optional, Sequence, Union
 import holidays
 import numpy as np
 import pandas as pd
+from pydantic import validate_call
 
 from helicast.logging import configure_logging
 
@@ -14,7 +15,6 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "add_lagged_columns",
     "add_future_columns",
-    "TestClass",
     "add_day_of_week_column",
     "add_day_of_year_column",
     "add_hour_column",
@@ -64,6 +64,7 @@ def _add_shifted_columns(
     return df
 
 
+@validate_call(config={"arbitrary_types_allowed": True})
 def add_lagged_columns(
     df: pd.DataFrame,
     n: Union[int, Sequence[int]],
@@ -391,13 +392,3 @@ def add_sweden_public_holiday_column(
             raise ValueError()
 
     return df
-
-
-class TestClass:
-    def method(self, i: int):
-        """Dummy method
-
-        Args:
-            i: _description_
-        """
-        return None
