@@ -67,28 +67,80 @@ def list_submodules_and_subpackages(
 
 def list_functions(module_name: str, full_path: bool = False):
     module = importlib.import_module(module_name)
+    # Check if __all__ is defined in the module
+    if hasattr(module, "__all__"):
+        exported_names = set(module.__all__)
+    else:
+        # If __all__ is not defined, consider all names as exported
+        exported_names = {name for name in dir(module) if not name.startswith("_")}
+
     functions = []
-    for name in dir(module):
+    for name in exported_names:  # Iterate over exported names instead of dir(module)
         attribute = getattr(module, name)
         if inspect.isfunction(attribute):
             if full_path:
                 name = module_name + "." + name
             functions.append(name)
+
     functions = list(sorted(functions))
     return functions
 
 
 def list_classes(module_name: str, full_path: bool = False):
     module = importlib.import_module(module_name)
+
+    # Check if __all__ is defined in the module
+    if hasattr(module, "__all__"):
+        exported_names = set(module.__all__)
+    else:
+        # If __all__ is not defined, consider all names as exported
+        exported_names = {name for name in dir(module) if not name.startswith("_")}
+
     classes = []
-    for name in dir(module):
+    for name in exported_names:  # Iterate over exported names instead of dir(module)
         attribute = getattr(module, name)
         if inspect.isclass(attribute):
             if full_path:
                 name = module_name + "." + name
             classes.append(name)
+
     classes = list(sorted(classes))
     return classes
+
+
+def list_all(module_name: str, full_path: bool = False):
+    module = importlib.import_module(module_name)
+
+    # Check if __all__ is defined in the module
+    if hasattr(module, "__all__"):
+        exported_names = set(module.__all__)
+    else:
+        # If __all__ is not defined, consider all names as exported
+        exported_names = {name for name in dir(module) if not name.startswith("_")}
+
+    all_list = []
+    for name in exported_names:
+        if full_path:
+            name = module_name + "." + name
+        all_list.append(name)
+    all_list = list(sorted(all_list))
+    return all_list
+
+
+def import_class_from_string(full_class_string) -> type:
+    # Split the string to separate the module path from the class name
+    module_path, _, class_name = full_class_string.rpartition(".")
+
+    # Dynamically import the module
+    module = importlib.import_module(module_path)
+
+    # Get the class from the module
+    cls = getattr(module, class_name)
+
+    return cls
+
+
+from pydantic import BaseModel
 
 
 def write_files(registry: dict) -> List[str]:
@@ -103,13 +155,29 @@ def write_files(registry: dict) -> List[str]:
             filepath = Path(folder, name + ".rst")
             full_name = module + "." + name
             new_registry[module].append(filepath)
+            directive = "autoclass"
+            cls = import_class_from_string(full_name)
+            if issubclass(cls, BaseModel):
+                directive = "autopydantic_model"
+
             with open(filepath, "w") as fhandle:
                 fhandle.write(f"{name}\n")
                 fhandle.write(f"{'-'*int(1.5 *len(name))}\n")
                 fhandle.write(f"\n")
-                fhandle.write(f".. autoclass:: {full_name}\n")
-                fhandle.write(f"    :members:\n")
-                fhandle.write(f"    :undoc-members:\n")
+                fhandle.write(f".. {directive}:: {full_name}\n")
+                if directive == "autopydantic_model":
+                    fhandle.write(f"    :model-show-json: false\n")
+                    fhandle.write(f"    :model-hide-paramlist: false\n")
+                    fhandle.write(f"    :model-show-config-summary: false\n")
+                    fhandle.write(f"    :model-show-validator-members: false\n")
+                    fhandle.write(f"    :model-show-validator-summary: false\n")
+                    fhandle.write(f"    :model-show-field-summary: false\n")
+                    fhandle.write(f"    :undoc-members: false\n")
+                    fhandle.write(f"    :members: false\n")
+                else:
+                    fhandle.write(f"    :undoc-members:\n")
+                    fhandle.write(f"    :members:\n")
+
                 fhandle.write(f"    :inherited-members:\n")
 
         for name in members["functions"]:
@@ -122,6 +190,17 @@ def write_files(registry: dict) -> List[str]:
                 fhandle.write(f"\n")
                 fhandle.write(f".. autofunction:: {full_name}\n")
 
+        for name in members["others"]:
+            filepath = Path(folder, name + ".rst")
+            full_name = module + "." + name
+            new_registry[module].append(filepath)
+            with open(filepath, "w") as fhandle:
+                fhandle.write(f"{name}\n")
+                fhandle.write(f"{'-'*int(1.5 *len(name))}\n")
+                fhandle.write(f"\n")
+                fhandle.write(f".. autodata:: {full_name}\n")
+                # fhandle.write(f"    :annotation:\n")
+
     return new_registry
 
 
@@ -133,6 +212,14 @@ if __name__ == "__main__":
     for module_name in module_names:
         registry[module_name]["functions"] = list_functions(module_name)
         registry[module_name]["classes"] = list_classes(module_name)
+        registry[module_name]["others"] = list_all(module_name)
+
+        function_or_class = set(
+            registry[module_name]["functions"] + registry[module_name]["classes"]
+        )
+        registry[module_name]["others"] = [
+            i for i in registry[module_name]["others"] if i not in function_or_class
+        ]
 
     source_folder = Path(get_git_repo_root(), "docs", "source")
     new_registry = write_files(registry)
