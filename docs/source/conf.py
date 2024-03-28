@@ -18,6 +18,7 @@ html_static_path = ["_static"]
 
 
 extensions = [
+    "sphinxcontrib.autodoc_pydantic",
     "nbsphinx",
     "sphinx.ext.napoleon",
     # "sphinx_rtd_theme",

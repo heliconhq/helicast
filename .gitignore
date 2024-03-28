@@ -2,6 +2,9 @@
 helicast/_version.py
 /notebooks/*
 
+/docs/source/python-api
+/docs/source/python-api.rst
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
