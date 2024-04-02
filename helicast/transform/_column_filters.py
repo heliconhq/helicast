@@ -27,6 +27,10 @@ __all__ = [
     "DTypeRemover",
     "remove_columns_by_dtype",
     "AllSelector",
+    "NameSelector",
+    "select_columns_by_names",
+    "NameRemover",
+    "remove_columns_by_names",
 ]
 
 
@@ -366,3 +370,51 @@ class AllSelector(ColumnFilter):
 
     def __call__(self, X: pd.DataFrame) -> List[str]:
         return X.columns.to_list()
+
+
+class NameBase(ColumnFilter):
+    """Base model for name-based filtering."""
+
+    names: Union[str, List[str]]
+
+    @field_validator("names")
+    @classmethod
+    def auto_cast_to_list(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            v = [v]
+        return v
+
+    def __or__(self, __value: object) -> ColumnFilter:
+        if isinstance(__value, self.__class__):
+            names = self.names + __value.names
+            names = list(np.unique(names))
+            return self.__class__(names=names)
+        else:
+            return ColumnFilter.__or__(self, __value)
+
+    def __eq__(self, __value: object) -> bool:
+        if isinstance(__value, self.__class__):
+            return set(self.names) == set(__value.names)
+        return False
+
+
+class NameSelector(NameBase):
+    def _select_columns(self, X: pd.DataFrame) -> List[str]:
+        return list(set(self.names))
+
+
+def select_columns_by_names(
+    df: pd.DataFrame, names: Union[str, List[str]]
+) -> pd.DataFrame:
+    return NameSelector(names=names).fit_transform(df)
+
+
+class NameRemover(NameBase):
+    def _select_columns(self, X: pd.DataFrame) -> List[str]:
+        return list(set(X.columns) - set(self.names))
+
+
+def remove_columns_by_names(
+    df: pd.DataFrame, names: Union[str, List[str]]
+) -> pd.DataFrame:
+    return NameRemover(names=names).fit_transform(df)
