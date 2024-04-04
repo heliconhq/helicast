@@ -13,9 +13,6 @@ from typing import List, Optional
 import numpy as np
 import pandas as pd
 
-import helicast.data_processing
-from helicast.data_processing import add_future_columns, add_lagged_columns
-
 
 def get_git_repo_root() -> Optional[str]:
     """Returns the root of the git repo as a string. If the folder in which process is
@@ -205,6 +202,8 @@ def write_files(registry: dict) -> List[str]:
 
 
 if __name__ == "__main__":
+    import helicast
+
     module_names = list_submodules_and_subpackages(helicast, include_private=False)
 
     registry = {i: {} for i in module_names}
