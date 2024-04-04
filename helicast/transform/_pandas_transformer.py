@@ -8,8 +8,8 @@ from sklearn.compose import ColumnTransformer
 from typing_extensions import Self
 
 from helicast.base import PydanticBaseEstimator
+from helicast.column_filters._base import AllSelector, ColumnFilter
 from helicast.logging import configure_logging
-from helicast.transform._column_filters import AllSelector, ColumnFilter
 from helicast.typing import UNSET
 
 configure_logging()
