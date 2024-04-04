@@ -7,6 +7,7 @@ from sklearn import config_context
 from sklearn.pipeline import Pipeline
 from typing_extensions import Self
 
+from helicast.base import _validate_X_y
 from helicast.logging import configure_logging
 
 configure_logging()
@@ -48,32 +49,13 @@ class PandasPipeline(Pipeline):
          is completed.
     """
 
-    @validate_call(config=_VALIDATE_CONFIG)
-    def _validate_X_DataFrame(self, X: pd.DataFrame) -> pd.DataFrame:
-        return X
-
-    @validate_call(config=_VALIDATE_CONFIG)
-    def _validate_y_DataFrame(
-        self, y: Union[pd.DataFrame, pd.Series, None]
-    ) -> Union[pd.DataFrame, None]:
-        if isinstance(y, pd.Series):
-            y = y.to_frame(name="values" if y.name is None else y.name)
-        return y
-
-    def _validate_X_y_DataFrame(
-        self, X: pd.DataFrame, y: Union[pd.DataFrame, pd.Series, None]
-    ) -> Tuple[pd.DataFrame, Union[pd.DataFrame, None]]:
-        X = self._validate_X_DataFrame(X)
-        y = self._validate_y_DataFrame(y)
-        return X, y
-
     def fit(
         self,
         X: pd.DataFrame,
         y: Union[pd.DataFrame, pd.Series, None] = None,
         **fit_params,
     ) -> Self:
-        X, y = self._validate_X_y_DataFrame(X, y)
+        X, y = _validate_X_y(X, y)
 
         if y is None:
             self.target_names_in_ = None
@@ -85,12 +67,12 @@ class PandasPipeline(Pipeline):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        X, _ = self._validate_X_y_DataFrame(X, None)
+        X, _ = _validate_X_y(X, None)
         with config_context(transform_output="pandas"):
             return super().transform(X)
 
     def predict(self, X: pd.DataFrame, **predict_params) -> pd.DataFrame:
-        X, _ = self._validate_X_y_DataFrame(X, None)
+        X, _ = _validate_X_y(X, None)
         with config_context(transform_output="pandas"):
             y_hat = super().predict(X, **predict_params)
 

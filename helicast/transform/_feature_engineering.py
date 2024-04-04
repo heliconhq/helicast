@@ -1,6 +1,6 @@
 import logging
 from copy import deepcopy
-from typing import Annotated, List, Sequence, Union
+from typing import Annotated, Any, List, Sequence, Union
 
 import pandas as pd
 from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter, ValidationError
@@ -24,7 +24,16 @@ __all__ = [
 def _validate_positive_shifts(
     v: Union[PositiveInt, List[PositiveInt]]
 ) -> List[PositiveInt]:
-    """Use in a validator to validate shifts."""
+    """Use in a validator to validate shifts.
+
+    * If ``v`` is an integer, it checks that it
+    is a strictly positive number and then returns ``list(range(v, v+1))``, e.g.,
+    ``v=2`` will return ``[1, 2]``.
+    * If ``v`` is some sort of iterable, it casts it onto a Python list and each element
+    is checked to be strictly positive, e.g., ``v=[1, 3, 5]`` will work while
+    ``v=[0, 1, 3, 5]`` won't.
+
+    """
 
     value = deepcopy(v)
 

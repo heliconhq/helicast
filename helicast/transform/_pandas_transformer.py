@@ -1,37 +1,60 @@
 import logging
-from typing import List, Literal
+from typing import Annotated, List, Literal, Union
 
 import pandas as pd
+from pydantic import AfterValidator, Field, model_validator
 from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from typing_extensions import Self
 
+from helicast.base import PydanticBaseEstimator
 from helicast.logging import configure_logging
 from helicast.transform._column_filters import AllSelector, ColumnFilter
+from helicast.typing import UNSET
 
 configure_logging()
 logger = logging.getLogger(__name__)
 
+
 __all__ = ["PandasTransformer"]
 
 
-class PandasTransformer(BaseEstimator):
-    def __init__(
-        self,
-        transformer: BaseEstimator,
-        filter: ColumnFilter,
-        remainder: Literal["passthrough", "drop"] = "passthrough",
-        extra: Literal["ignore", "warn", "raise"] = "warn",
-        extra_ignored: Literal["ignore", "warn", "raise"] = "warn",
-        missing_ignored: Literal["ignore", "warn", "raise"] = "warn",
-    ) -> None:
+class PandasTransformer(PydanticBaseEstimator):
 
-        self.transformer = transformer
-        self.filter = filter
-        self.remainder = remainder
-        self.extra = extra
-        self.extra_ignored = extra_ignored
-        self.missing_ignored = missing_ignored
+    transformer: BaseEstimator
+    filter: Union[ColumnFilter, None] = None
+
+    remainder: Literal["passthrough", "drop"] = "passthrough"
+    extra: Literal["ignore", "warn", "raise"] = "raise"
+    extra_ignored: Literal["ignore", "warn", "raise"] = "warn"
+    missing_ignored: Literal["ignore", "warn", "raise"] = "warn"
+
+    #: All the features seen during fit
+    all_feature_names_in_: List[str] = Field(UNSET, init=False, repr=False)
+
+    #: All the relevant features seen during fit. It's a subset of `all_feature_names_in_`
+    #: after the `self.filter` has been used
+    feature_names_in_: List[str] = Field(UNSET, init=False, repr=False)
+
+    #: All the features seen during fit but ignored. This is disjoint with `feature_names_in`
+    #: and the union of `ignored_feature_names_in_` and `feature_names_in` will give
+    #: `all_feature_names_in_`
+    ignored_feature_names_in_: List[str] = Field(UNSET, init=False, repr=False)
+
+    # TODO: This should not be needed?
+    target_names_in_: Union[List[str], None] = Field(UNSET, init=False, repr=False)
+
+    @model_validator(mode="after")
+    def _check_transformer(self) -> "PandasTransformer":
+        if not hasattr(self.transformer, "transform"):
+            raise TypeError(f"{self.transformer=} has not `transform` method!")
+        return self
+
+    @property
+    def _filter(self) -> ColumnFilter:
+        if self.filter is None:
+            return AllSelector()
+        return self.filter
 
     def _get_extra_columns_report(self, selected_columns: List[str]) -> str:
         """Get a string message if there are columns in ``selected_columns`` that
@@ -114,7 +137,7 @@ class PandasTransformer(BaseEstimator):
     def fit(self, X: pd.DataFrame, y=None) -> Self:
 
         self.all_feature_names_in_ = X.columns.to_list()
-        self.feature_names_in_ = self.filter(X)
+        self.feature_names_in_ = self._filter(X)
         self.ignored_feature_names_in_ = [
             i for i in self.all_feature_names_in_ if i not in self.feature_names_in_
         ]
@@ -136,7 +159,7 @@ class PandasTransformer(BaseEstimator):
 
         index = X.index
         columns = X.columns.to_list()
-        selected_columns = self.filter(X)
+        selected_columns = self._filter(X)
         ignored_columns = list(set(columns) - set(selected_columns))
 
         self._validate_columns(selected_columns, ignored_columns)
@@ -149,6 +172,10 @@ class PandasTransformer(BaseEstimator):
         if self.remainder == "passthrough":
             for c in ignored_columns:
                 new_X.loc[:, c] = X[c]
+
+        # Keep the original ordering only if the columns are identical
+        if set(columns) == set(new_X.columns):
+            new_X = new_X[columns]
 
         return new_X
 
