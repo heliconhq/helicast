@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from typing_extensions import Self
 
-from helicast.base import PydanticBaseEstimator
+from helicast.base import PydanticBaseEstimator, _validate_X_y
 from helicast.column_filters._base import AllSelector, ColumnFilter
 from helicast.logging import configure_logging
 from helicast.typing import UNSET
@@ -26,8 +26,8 @@ class PandasTransformer(PydanticBaseEstimator):
 
     remainder: Literal["passthrough", "drop"] = "passthrough"
     extra: Literal["ignore", "warn", "raise"] = "raise"
-    extra_ignored: Literal["ignore", "warn", "raise"] = "warn"
-    missing_ignored: Literal["ignore", "warn", "raise"] = "warn"
+    extra_ignored: Literal["ignore", "warn", "raise"] = "raise"
+    missing_ignored: Literal["ignore", "warn", "raise"] = "raise"
 
     #: All the features seen during fit
     all_feature_names_in_: List[str] = Field(UNSET, init=False, repr=False)
@@ -49,12 +49,6 @@ class PandasTransformer(PydanticBaseEstimator):
         if not hasattr(self.transformer, "transform"):
             raise TypeError(f"{self.transformer=} has not `transform` method!")
         return self
-
-    @property
-    def _filter(self) -> ColumnFilter:
-        if self.filter is None:
-            return AllSelector()
-        return self.filter
 
     def _get_extra_columns_report(self, selected_columns: List[str]) -> str:
         """Get a string message if there are columns in ``selected_columns`` that
@@ -136,8 +130,13 @@ class PandasTransformer(PydanticBaseEstimator):
 
     def fit(self, X: pd.DataFrame, y=None) -> Self:
 
+        X, y = _validate_X_y(X, y)
+
         self.all_feature_names_in_ = X.columns.to_list()
-        self.feature_names_in_ = self._filter(X)
+        if self.filter is None:
+            self.feature_names_in_ = self.all_feature_names_in_[:]
+        else:
+            self.feature_names_in_ = self.filter(X)
         self.ignored_feature_names_in_ = [
             i for i in self.all_feature_names_in_ if i not in self.feature_names_in_
         ]
@@ -159,7 +158,10 @@ class PandasTransformer(PydanticBaseEstimator):
 
         index = X.index
         columns = X.columns.to_list()
-        selected_columns = self._filter(X)
+        if self.filter is None:
+            selected_columns = columns[:]
+        else:
+            selected_columns = self.filter(X)
         ignored_columns = list(set(columns) - set(selected_columns))
 
         self._validate_columns(selected_columns, ignored_columns)

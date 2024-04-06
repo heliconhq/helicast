@@ -1,11 +1,11 @@
 import logging
-from typing import List, Union
+from typing import List, Literal, Union
 
 import numpy as np
 import pandas as pd
 from pydantic import Field
 from sklearn.base import BaseEstimator
-from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 from typing_extensions import Self
 
 from helicast.base import PydanticBaseEstimator, _validate_X, _validate_X_y
@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 __all__ = ["PandasTransformedTargetRegressor"]
 
 
-def _check_columns(columns: List[str], reference_columns: List[str]):
+def _check_columns(columns: List[str], reference_columns: List[str]) -> None:
+    """Check that ``columns`` and ``reference_columns`` contains exactly the same
+    elements, otherwise, raise a verbose ``RuntimeError``."""
     extra = set(columns) - set(reference_columns)
     missing = set(reference_columns) - set(columns)
 
@@ -44,7 +46,7 @@ class PandasTransformedTargetRegressor(PydanticBaseEstimator):
 
     def _check_is_fitted(self):
         attrs = ["feature_names_in_", "target_names_in_"]
-        if any(getattr(self, i, UNSET) for i in attrs):
+        if any(getattr(self, i, UNSET) is UNSET for i in attrs):
             raise RuntimeError(
                 f"You must first fit the {self.__class__.__name__} object!"
             )
@@ -74,6 +76,11 @@ class PandasTransformedTargetRegressor(PydanticBaseEstimator):
         self.target_names_in_ = y.columns.to_list()
 
         y_trans = self.transformer.fit_transform(y)
+        if isinstance(y_trans, np.ndarray):
+            if y_trans.ndim == 1:
+                y_trans = np.reshape(y_trans, (-1, 1))
+            y_trans = pd.DataFrame(y_trans, columns=y.columns, index=y.index)
+
         self.regressor.fit(X, y_trans, **fit_params)
         return self
 
@@ -83,15 +90,15 @@ class PandasTransformedTargetRegressor(PydanticBaseEstimator):
         self._check_X_columns(X)
 
         # Reorder columns!
-        X = X[self.feature_names_in_]
-        y_hat = self.regressor.predict(X, **predict_params)
+        y_hat = self.regressor.predict(X[self.feature_names_in_], **predict_params)
         y_hat = self.transformer.inverse_transform(y_hat)
 
         if isinstance(y_hat, pd.DataFrame):
-            pass
+            if set(y_hat.columns) != set(self.target_names_in_):
+                raise ValueError(f"{y_hat.columns=}, {self.target_names_in_=}.")
         elif isinstance(y_hat, pd.Series):
             y_hat = y_hat.to_frame(
-                name=y_hat.name if y_hat.name is not None else "prediction"
+                name=y_hat.name if y_hat.name is not None else self.target_names_in_[0]
             )
         elif isinstance(y_hat, np.ndarray):
             if y_hat.ndim == 1:
@@ -103,7 +110,10 @@ class PandasTransformedTargetRegressor(PydanticBaseEstimator):
         return y_hat
 
     def score(
-        self, X: pd.DataFrame, y: Union[pd.DataFrame, pd.Series, None] = None
+        self,
+        X: pd.DataFrame,
+        y: Union[pd.DataFrame, pd.Series, None] = None,
+        scoring: Literal["r2", "mse", "rmse"] = "r2",
     ) -> float:
         X, y = _validate_X_y(X, y)
         if y is None:
@@ -112,4 +122,15 @@ class PandasTransformedTargetRegressor(PydanticBaseEstimator):
 
         y_hat = self.predict(X)
 
-        return float(r2_score(y, y_hat))
+        match scoring:
+            case "r2":
+                score = float(r2_score(y, y_hat))
+            case "mse":
+                score = float(mean_squared_error(y, y_hat))
+            case "rmse":
+                score = float(mean_squared_error(y, y_hat))
+                score = float(np.sqrt(score))
+            case _:
+                raise ValueError(f"{scoring=}")
+
+        return score
