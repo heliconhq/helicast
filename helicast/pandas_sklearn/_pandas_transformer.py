@@ -3,11 +3,20 @@ from typing import Annotated, List, Literal, Union
 
 import pandas as pd
 from pydantic import AfterValidator, Field, model_validator
+from sklearn import config_context
 from sklearn.base import BaseEstimator
 from sklearn.compose import ColumnTransformer
 from typing_extensions import Self
 
-from helicast.base import PydanticBaseEstimator, _validate_X_y
+from helicast.base import (
+    PydanticBaseEstimator,
+    _check_fitted,
+    _check_X_columns,
+    _validate_X_y,
+    cast_to_DataFrame,
+    ignore_data_conversion_warnings,
+    reoder_columns_if_needed,
+)
 from helicast.column_filters._base import AllSelector, ColumnFilter
 from helicast.logging import configure_logging
 from helicast.typing import UNSET
@@ -16,10 +25,10 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["PandasTransformer"]
+__all__ = ["PandasSelectiveTransformer", "PandasTransformer"]
 
 
-class PandasTransformer(PydanticBaseEstimator):
+class PandasSelectiveTransformer(PydanticBaseEstimator):
 
     transformer: BaseEstimator
     filter: Union[ColumnFilter, None] = None
@@ -44,10 +53,12 @@ class PandasTransformer(PydanticBaseEstimator):
     # TODO: This should not be needed?
     target_names_in_: Union[List[str], None] = Field(UNSET, init=False, repr=False)
 
+    column_transformer_: ColumnTransformer = Field(UNSET, init=False, repr=False)
+
     @model_validator(mode="after")
     def _check_transformer(self) -> "PandasTransformer":
         if not hasattr(self.transformer, "transform"):
-            raise TypeError(f"{self.transformer=} has not `transform` method!")
+            raise TypeError(f"{self.transformer=} has no `transform` method!")
         return self
 
     def _get_extra_columns_report(self, selected_columns: List[str]) -> str:
@@ -137,6 +148,7 @@ class PandasTransformer(PydanticBaseEstimator):
             self.feature_names_in_ = self.all_feature_names_in_[:]
         else:
             self.feature_names_in_ = self.filter(X)
+
         self.ignored_feature_names_in_ = [
             i for i in self.all_feature_names_in_ if i not in self.feature_names_in_
         ]
@@ -150,7 +162,10 @@ class PandasTransformer(PydanticBaseEstimator):
             verbose_feature_names_out=False,
         )
 
-        self.column_transformer_.fit(X[self.feature_names_in_], y)
+        self.column_transformer_.fit(
+            X=reoder_columns_if_needed(X, columns=self.feature_names_in_, strict=False),
+            y=y,
+        )
 
         return self
 
@@ -166,8 +181,12 @@ class PandasTransformer(PydanticBaseEstimator):
 
         self._validate_columns(selected_columns, ignored_columns)
 
-        new_X = self.column_transformer_.transform(X[self.feature_names_in_])
-        new_X = pd.DataFrame(
+        new_X = reoder_columns_if_needed(
+            X, columns=self.feature_names_in_, strict=False
+        )
+        with config_context(transform_output="pandas"):
+            new_X = self.column_transformer_.transform(new_X)
+        new_X = cast_to_DataFrame(
             new_X, columns=self.column_transformer_.get_feature_names_out(), index=index
         )
 
@@ -183,3 +202,15 @@ class PandasTransformer(PydanticBaseEstimator):
 
     def fit_transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         return self.fit(X, y).transform(X)
+
+
+class PandasTransformer(PandasSelectiveTransformer):
+    def __init__(self, transformer: BaseEstimator):
+        super().__init__(
+            transformer=transformer,
+            filter=None,
+            remainder="passthrough",
+            extra="raise",
+            extra_ignored="raise",
+            missing_ignored="raise",
+        )

@@ -25,7 +25,17 @@ class ThreadSafeSingletonMetaclass(type):
         return cls._instances[cls]
 
 
-class UnsetType(metaclass=ThreadSafeSingletonMetaclass):
+class ThreadSafeSingleton(metaclass=ThreadSafeSingletonMetaclass):
+    def __copy__(self):
+        # Return the same instance to maintain singleton property.
+        return self
+
+    def __deepcopy__(self, memo):
+        # Return the same instance for deepcopy to maintain singleton property.
+        return self
+
+
+class UnsetType(ThreadSafeSingleton):
     def __repr__(self) -> str:
         return str(self)
 
