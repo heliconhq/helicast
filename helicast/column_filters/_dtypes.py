@@ -51,6 +51,7 @@ class DTypeSelector(DTypeBase):
         dtypes: str of list of str that specifies the types, as specified in pandas
          ``select_dtypes`` pd.DataFrame method. Here, ``dtypes`` will be passed as
          the ``include`` argument of ``select_dtypes``.
+
     """
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
