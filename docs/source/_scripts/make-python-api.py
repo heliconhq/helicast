@@ -175,7 +175,7 @@ def write_files(registry: dict) -> List[str]:
                     fhandle.write(f"    :undoc-members:\n")
                     fhandle.write(f"    :members:\n")
 
-                fhandle.write(f"    :inherited-members:\n")
+                fhandle.write(f"    :inherited-members: BaseModel\n")
 
         for name in members["functions"]:
             filepath = Path(folder, name + ".rst")

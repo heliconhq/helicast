@@ -136,3 +136,33 @@ def generate_docs_for_module(module, docs_path):
 # Path where you want to save the generated .rst files
 # docs_path = "/home/leandro/Documents/repos/helicast/docs"
 # generate_docs_for_module(helicast, docs_path)
+
+
+# def setup(app):
+#    app.connect("autodoc-skip-member", skip_member)
+
+
+def skip_member(app, what, name, obj, skip, options):
+
+    if name == "pydantic_model":
+        print(app, type(app))
+        print(what, type(what))
+        print(name, type(name))
+        print(obj, type(obj))
+        print(skip, type(skip))
+        print(options, type(options))
+        print()
+        allowed_inherited_members = [
+            "fit",
+            "transform",
+            "predict",
+            "fit_transform",
+            "fit_predict",
+            "get_params",
+            "set_params",
+            "score",
+        ]
+        if name in allowed_inherited_members:
+            return False  # Do not skip this member
+        return True  # Keep the original decision for all other members
+    return skip
