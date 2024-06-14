@@ -1,6 +1,7 @@
 from logging import getLogger
-from typing import Union
+from typing import List, Union
 
+import numpy as np
 import pandas as pd
 
 from helicast.logging import configure_logging
@@ -25,8 +26,27 @@ DATE_FORMATS = [i.split(" ")[0] for i in DATETIME_FORMATS]
 
 
 def auto_convert_to_datetime_index(
-    dates: Union[pd.Series, pd.DatetimeIndex]
+    dates: Union[np.ndarray, List, pd.Series, pd.DatetimeIndex]
 ) -> pd.DatetimeIndex:
+    """Auto-convert an array-like object of dates (as string) to a pd.DatetimeIndex.
+
+    Args:
+        dates: Array-like object of dates to convert to pd.DatetimeIndex.
+
+    Raises:
+        TypeError: If the input is not a np.ndarray, a list, a pd.Series or
+            pd.DatetimeIndex.
+        RuntimeError: If no format is found.
+        RuntimeError: If several formats with the same number of frequencies are found.
+
+    Returns:
+        The dates converted to a pd.DatetimeIndex.
+    """
+
+    if isinstance(dates, np.ndarray):
+        dates = pd.Series(dates)
+    elif isinstance(dates, list):
+        dates = pd.Series(dates)
 
     if isinstance(dates, pd.DatetimeIndex):
         logger.warning("Input is already pd.DatetimeIndex, returning it as it is!")
@@ -53,7 +73,7 @@ def auto_convert_to_datetime_index(
     if len(results) == 0:
         raise RuntimeError("No format found!")
     elif len(results) == 1:
-        return list(results.values())[0]
+        return pd.DatetimeIndex(list(results.values())[0])
 
     results_frequencies = {}
     for k in list(results.keys()):
@@ -64,4 +84,4 @@ def auto_convert_to_datetime_index(
     formats = sorted(formats, key=lambda x: x[0])
     if formats[0][0] == formats[1][0]:
         raise RuntimeError(f"Multiple formats found, {results}")
-    return results[formats[0][2]]
+    return pd.DatetimeIndex(results[formats[0][2]])
