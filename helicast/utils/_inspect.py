@@ -1,6 +1,6 @@
 import inspect
 from inspect import FullArgSpec
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List, _GenericAlias
 
 from pydantic import BaseModel
 
@@ -10,13 +10,15 @@ __all__ = [
     "get_init_args_with_defaults",
     "get_init_args",
     "get_non_default_init_args",
+    "is_classvar",
+    "get_param_type_mapping",
+    "get_classvar_list",
 ]
 
 
 def _get_args_with_defaults(
     arg_spec: FullArgSpec, ignore_self: bool = True
 ) -> Dict[str, Any]:
-
     args = arg_spec.args[:]
     if ignore_self and arg_spec.args[0] == "self":
         args = arg_spec.args[1:]
@@ -34,7 +36,6 @@ def _get_args_with_defaults(
 
 
 def _get_kwargs_with_defaults(arg_spec: FullArgSpec) -> Dict[str, Any]:
-
     kwargs = [] if arg_spec.kwonlyargs is None else arg_spec.kwonlyargs
     kwargs = {i: UNSET for i in kwargs}
     if arg_spec.kwonlydefaults is not None:
@@ -110,3 +111,33 @@ def get_non_default_init_args(obj) -> Dict[str, Any]:
         params = {i: getattr(obj, i) for i in all_args.keys()}
 
     return {i: params[i] for i, j in all_args.items() if j is UNSET or j != params[i]}
+
+
+def is_classvar(_type: Any) -> bool:
+    """Returns True if the ``_type`` is a ClassVar, False otherwise."""
+    if _type == ClassVar:
+        return True
+
+    try:
+        if _type.__origin__ == ClassVar:
+            return True
+    except:
+        pass
+
+    return False
+
+
+def get_param_type_mapping(cls) -> Dict[str, type]:
+    """Returns the types of the parameters of the estimator. This is useful for
+    type checking. Correctly ignores ClassVar fields."""
+
+    __annotations__ = getattr(cls, "__annotations__", {})
+    return {
+        name: _type for name, _type in __annotations__.items() if not is_classvar(_type)
+    }
+
+
+def get_classvar_list(cls) -> List[str]:
+    """Returns the list of ClassVar fields of the dataclass."""
+    __annotations__ = getattr(cls, "__annotations__", {})
+    return [name for name, _type in __annotations__.items() if is_classvar(_type)]
