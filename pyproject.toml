@@ -1,154 +1,58 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8", "wheel>=0.37.1"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/helicast/_version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/helicast"]
 
 [project]
 name = "helicast"
 dynamic = ["version"]   
 description = "Helicon Data Science team forecasting tool repo"
-readme = "README.md"
-requires-python = ">=3.10"
-authors = [
-    {name = "Helicon"},
-]
-keywords = [
-    "time series",
-    "machine learning",
-    "pytorch",
-]
-
-# https://pypi.org/classifiers/
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Natural Language :: English",
-    "Operating System :: POSIX :: Linux",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
-
 dependencies = [
-    "attrs",
     "pydantic>=2.0",
-    "typing_extensions",
-    "pandera",
-    "holidays",
-     
     "pandas>=2.0",
-    "pyarrow",
-    "openpyxl",
-    "pyyaml",
-    
-    "matplotlib",
-    "plotly",
-
-    # ML/maths
-    "numpy>=1.20",
-    #"tensorboard",
-    #"optuna",
     "scikit-learn>=1.0",
-    "joblib",
-    "scipy",
-    #"onnxruntime",
+    "numpy>=1.2",
+    "matplotlib>=3.0",
+]
+readme = "README.md"
+requires-python = ">= 3.10"
 
-    # nvidia
-    #"pynvml",
-
-    # PyTorch via pip as requirement?
-    #"torch",
-    #"torchvision",
-    #"torchaudio",
-    #"lightning", # Include PyTorch lightning?
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest>=8.0",
+    "ruff>=0.5.0",
+    "nbstripout>=0.7",
+    "jupyter>=1.0",
+    "sphinx>=7.0",
+    "pydata-sphinx-theme>=0.14.0",
+    "sphinx-design>=0.5.0",
+    "nbsphinx>=0.9.0",
+    "ipython>=8.12.0",
+    "autodoc-pydantic>=2.2.0",
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["./src"]
 
-[tool.setuptools_scm]
-version_file = "helicast/_version.py"
+[tool.ruff.format]
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+docstring-code-format = true
 
-[project.scripts]
-twigeox = "helicast.__main__:main"
-
-[project.urls]
-homepage = "https://gitlab.com/trelltech/data-science/helicast"
-documentation = "https://gitlab.com/trelltech/data-science/helicast"
-source = "https://gitlab.com/trelltech/data-science/helicast"
-tracker = "https://gitlab.com/trelltech/data-science/helicast/issues"
-
-[project.optional-dependencies]
-dev = ["helicast[test, lint, docs]"]
-test = [
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
-    "coverage"
-]
-lint = [
-    "isort",
-    "black",
-]
-docs = [
-    "sphinx",
-    "pydata-sphinx-theme",
-    "sphinx-design",
-    "nbsphinx",
-    "ipython",
-    "jupyter",
-    "autodoc_pydantic"
-]
-
-[tool.setuptools]
-# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
-platforms = ["Linux"] # Windows?
-include-package-data = true
-zip-safe = true 
-
-# Python modules and packages that are included in the
-# distribution package (and therefore become importable)
-[tool.setuptools.packages.find]
-where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["helicast*"]  # package names should match these glob patterns (["*"] by default)
-exclude = ["tests", "tests.*", "examples", "images"]
-
-# Configuration for pytest
-# https://docs.pytest.org/en/latest/reference/customize.html#pyproject-toml
-[tool.pytest.ini_options]
-testpaths = "tests"  # directory containing your tests
-norecursedirs = [
-    ".vscode",
-    "__pycache__"
-]
-# Warnings that should be ignored
-filterwarnings = [
-    "ignore::DeprecationWarning"
-]
-# custom markers that can be used using pytest.mark
-markers = [
-    "slow: lower-importance tests that take an excessive amount of time",
-]
-
-[tool.black]
-line-length = 88
-target-version = ['py310', 'py311', 'py312']
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-line_length = 88
-known_first_party = "helicast"
-skip = ".venv,.git,__pycache__,docs/source/conf.py,old,build,dist"
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
