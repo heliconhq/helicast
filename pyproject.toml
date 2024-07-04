@@ -21,9 +21,11 @@ description = "Helicon Data Science team forecasting tool repo"
 dependencies = [
     "pydantic>=2.0",
     "pandas>=2.0",
-    "scikit-learn>=1.0",
+    "scikit-learn>=1.5",
     "numpy>=1.2",
     "matplotlib>=3.0",
+    "strenum>=0.4.15",
+    "holidays>=0.52",
 ]
 readme = "README.md"
 requires-python = ">= 3.10"
@@ -41,7 +43,11 @@ dev-dependencies = [
     "nbsphinx>=0.9.0",
     "ipython>=8.12.0",
     "autodoc-pydantic>=2.2.0",
+    "coverage>=7.5.4",
 ]
+
+[tool.ruff.lint]
+ignore = ["F403"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["./src"]
