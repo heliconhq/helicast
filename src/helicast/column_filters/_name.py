@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import field_validator
 
+from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
 
@@ -20,6 +21,7 @@ __all__ = [
 ]
 
 
+@dataclass
 class NameBase(ColumnFilter):
     """Base model for name-based filtering."""
 
@@ -56,6 +58,7 @@ class NameBase(ColumnFilter):
         return False
 
 
+@dataclass
 class NameSelector(NameBase):
     """Select the columns of the DataFrame specified in ``names``.
 
@@ -79,6 +82,7 @@ def select_columns_by_names(
     return NameSelector(names=names, strict=strict).fit_transform(df)
 
 
+@dataclass
 class NameRemover(NameBase):
     """Remove the columns of the DataFrame specified in ``names``.
 
@@ -99,5 +103,4 @@ class NameRemover(NameBase):
 def remove_columns_by_names(
     df: pd.DataFrame, names: Union[str, List[str]], strict: bool = True
 ) -> pd.DataFrame:
-    __doc__ = NameRemover.__doc__
     return NameRemover(names=names, strict=strict).fit_transform(df)

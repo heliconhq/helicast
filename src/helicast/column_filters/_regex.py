@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from pydantic import field_validator
 
+from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
 
@@ -20,6 +21,7 @@ __all__ = [
 ]
 
 
+@dataclass
 class RegexBase(ColumnFilter):
     """Base model for regex-based filtering."""
 
@@ -57,6 +59,7 @@ class RegexBase(ColumnFilter):
         return False
 
 
+@dataclass
 class RegexSelector(RegexBase):
     """ColumnFilter implementing a regex selection rule.
 
@@ -79,6 +82,7 @@ def select_columns_by_regex(
     return RegexSelector(patterns=patterns).fit_transform(df)
 
 
+@dataclass
 class RegexRemover(RegexBase):
     """ColumnFilter implementing a regex exclusion rule.
 

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from pydantic import field_validator
 
+from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
 
@@ -20,6 +21,7 @@ __all__ = [
 ]
 
 
+@dataclass
 class DTypeBase(ColumnFilter):
     dtypes: Union[str, List[str]]
 

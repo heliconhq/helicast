@@ -1,17 +1,14 @@
-import re
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from logging import getLogger
-from typing import List, Union
+from typing import List
 
-import numpy as np
 import pandas as pd
-from pydantic import BaseModel, field_validator, validate_call
-from sklearn.base import BaseEstimator
+from pydantic import validate_call
 from typing_extensions import Self
 
-from helicast.base import PydanticBaseEstimator
+from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
-from helicast.utils import get_init_args
+from helicast.validation import validate_subset_of_reference
 
 configure_logging()
 logger = getLogger(__name__)
@@ -21,22 +18,8 @@ __all__ = [
 ]
 
 
-@validate_call(config={"strict": True})
-def _sort_columns(selected_columns: List[str], all_columns: List[str]) -> List[str]:
-    """For a list of strings ``selected_columns``, reorder them so that they respect
-    the ordering of ``all_columns``. Note that ``selected_columns`` MUST be a subset
-    of ``selected_columns`` (otherwise, ``ValueError`` is raised)
-
-    Returns:
-        The reordered ``selected_columns``.
-    """
-    extra = set(selected_columns) - set(all_columns)
-    if extra:
-        raise ValueError(f"Found columns {extra} which are not in `all_columns`!")
-    return [i for i in all_columns if i in set(selected_columns)]
-
-
-class ColumnFilter(PydanticBaseEstimator, ABC):
+@dataclass
+class ColumnFilter(StatelessTransformerMixin, BaseEstimator):
     """Abstract base class for DataFrame columns filtering. Child classes need to
     implement the ``_select_columns`` method which takes a pd.DataFrame in and outputs
     a list of columns which are to be selected.
@@ -56,16 +39,11 @@ class ColumnFilter(PydanticBaseEstimator, ABC):
         """
         pass
 
-    @validate_call(
-        config={
-            "arbitrary_types_allowed": True,
-            "validate_return": True,
-            "strict": True,
-        }
-    )
-    def __call__(self, X: pd.DataFrame) -> List[str]:
-        """Returns a list of column names matching the specific condition. The returned
-        list is ordered such that it follows ``X.columns`` ordering.
+    @validate_call(config={"arbitrary_types_allowed": True})
+    def select_columns(self, X: pd.DataFrame) -> List:
+        """Select the columns of a pd.DataFrame according to the object rule and
+        return them as a list. The list is ordered such that it follows ``X.columns``
+        ordering.
 
         Args:
             X: Input pd.DataFrame.
@@ -74,51 +52,15 @@ class ColumnFilter(PydanticBaseEstimator, ABC):
             A list of column names which match with the condition.
         """
         columns = self._select_columns(X)
-        columns = _sort_columns(columns, X.columns.to_list())
-
-        # Check the dropped columns just for logging
-        dropped_columns = list(set(X.columns) - set(columns))
-        dropped_columns = _sort_columns(dropped_columns, X.columns.to_list())
-        logger.info(f"Selecting {columns}, dropped {dropped_columns}")
+        columns = validate_subset_of_reference(columns, X.columns, reorder=True)
         return columns
 
-    def fit(self, X: pd.DataFrame, y=None, **kwargs) -> Self:
-        """Does nothing, just there for compatibility purposes."""
-        return self
+    def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        return X[self.select_columns(X)]
 
-    def transform(self, X: pd.DataFrame, y=None, **kwargs) -> pd.DataFrame:
-        """Takes a pd.DataFrame in and outputs another pd.DataFrame whose columns
-        have been selected according to the object rule.
-
-        Args:
-            X: Input pd.DataFrame
-            y: Ignored (defaults to None)
-
-        Raises:
-            TypeError: If ``X`` is not a DataFrame.
-
-        Returns:
-            A pd.DataFrame whose columns have been filtered.
-        """
-        if not isinstance(X, pd.DataFrame):
-            raise TypeError(f"X should be a pd.DataFrame. Found {type(X)=}.")
-        return X[self(X)].copy()
-
-    def fit_transform(self, X: pd.DataFrame, y=None, **kwargs) -> pd.DataFrame:
-        """Equivalent to ``self.transform`` as ``self.fit`` does nothing.
-
-        Args:
-            X: Input pd.DataFrame
-            y: Ignored (defaults to None)
-
-        Returns:
-            A pd.DataFrame whose columns have been filtered.
-        """
-        return self.transform(X, y, **kwargs)
-
-    def __or__(self, __value) -> Self:
+    def __or__(self, _value) -> Self:
         """Implements the basic ``|`` operator (bitwise or)."""
-        return ColumnFilterOr(left=self, right=__value)
+        return ColumnFilterOr(left=self, right=_value)
 
     def __and__(self, __value) -> Self:
         """Implements the basic ``&`` operator (bitwise and)."""
@@ -129,6 +71,7 @@ class ColumnFilter(PydanticBaseEstimator, ABC):
         return ColumnFilterNot(filter=self)
 
 
+@dataclass
 class ColumnFilterOr(ColumnFilter):
     """Holds the implementation for the bitwise **or** operator ``|`` between two
     ColumnFilter objects. The operator is equivalent to a set union.
@@ -145,9 +88,9 @@ class ColumnFilterOr(ColumnFilter):
         arbitrary_types_allowed = True
         strict = True
 
-    def _select_columns(self, X: pd.DataFrame) -> List[str]:
-        left_columns = self.left(X)
-        right_columns = self.right(X)
+    def _select_columns(self, X: pd.DataFrame) -> List:
+        left_columns = self.left.select_columns(X)
+        right_columns = self.right.select_columns(X)
         return list(set(left_columns).union(set(right_columns)))
 
     def __invert__(self) -> ColumnFilter:
@@ -155,6 +98,7 @@ class ColumnFilterOr(ColumnFilter):
         return ColumnFilterAnd(left=~self.left, right=~self.right)
 
 
+@dataclass
 class ColumnFilterAnd(ColumnFilter):
     """Holds the implementation for the bitwise **and** operator ``&`` between two
     ColumnFilter objects. The operator is equivalent to a set intersection.
@@ -172,8 +116,8 @@ class ColumnFilterAnd(ColumnFilter):
         strict = True
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
-        left_columns = self.left(X)
-        right_columns = self.right(X)
+        left_columns = self.left.select_columns(X)
+        right_columns = self.right.select_columns(X)
         return list(set(left_columns).intersection(set(right_columns)))
 
     def __invert__(self) -> ColumnFilter:
@@ -181,6 +125,7 @@ class ColumnFilterAnd(ColumnFilter):
         return ColumnFilterOr(left=~self.left, right=~self.right)
 
 
+@dataclass
 class ColumnFilterNot(ColumnFilter):
     """Holds the implementation for the binary **not** operator ``~`` for a
     ColumnFilter object. The operator is equivalent to a set different between the set
@@ -198,7 +143,7 @@ class ColumnFilterNot(ColumnFilter):
         strict = True
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
-        columns = self.filter(X)
+        columns = self.filter.select_columns(X)
         return list(set(X.columns) - set(columns))
 
     def __invert__(self) -> ColumnFilter:
@@ -206,11 +151,9 @@ class ColumnFilterNot(ColumnFilter):
         return self.filter
 
 
+@dataclass
 class AllSelector(ColumnFilter):
     """Dummy column filter that selects all the columns (does not modify the DataFrame)."""
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
-        return X.columns.to_list()
-
-    def __call__(self, X: pd.DataFrame) -> List[str]:
         return X.columns.to_list()
