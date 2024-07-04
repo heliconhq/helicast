@@ -8,7 +8,6 @@ from helicast.typing._timeseries_dataframe import (
     CompleteTimeDataFrameValidator,
     TimeDataFrame,
 )
-from helicast.validation._pydantic import HelicastBaseModel
 
 __all__ = ["validate_timeseries_dataframe", "validate_complete_timeseries_dataframe"]
 
@@ -21,7 +20,6 @@ def validate_timeseries_dataframe(df: TimeDataFrame) -> pd.DataFrame:
 def validate_complete_timeseries_dataframe(
     df: TimeDataFrame, frequency: pd.Timedelta | None = None
 ) -> pd.DataFrame:
-
     CustomTimeDataFrame = Annotated[
         pd.DataFrame,
         AfterValidator(CompleteTimeDataFrameValidator(allowed_frequency=frequency)),

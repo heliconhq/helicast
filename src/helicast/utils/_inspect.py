@@ -1,6 +1,7 @@
 import inspect
+from dataclasses import fields
 from inspect import FullArgSpec
-from typing import Any, ClassVar, Dict, List, _GenericAlias
+from typing import Any, ClassVar, Dict, List
 
 from pydantic import BaseModel
 
@@ -121,7 +122,7 @@ def is_classvar(_type: Any) -> bool:
     try:
         if _type.__origin__ == ClassVar:
             return True
-    except:
+    except Exception:
         pass
 
     return False
@@ -131,10 +132,7 @@ def get_param_type_mapping(cls) -> Dict[str, type]:
     """Returns the types of the parameters of the estimator. This is useful for
     type checking. Correctly ignores ClassVar fields."""
 
-    __annotations__ = getattr(cls, "__annotations__", {})
-    return {
-        name: _type for name, _type in __annotations__.items() if not is_classvar(_type)
-    }
+    return {p.name: p.type for p in fields(cls)}
 
 
 def get_classvar_list(cls) -> List[str]:
