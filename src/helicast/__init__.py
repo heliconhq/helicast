@@ -1,1 +1,1 @@
-from helicast._version import __version__, version, version_tuple
+from helicast._version import __version__, version, version_tuple  # noqa: F401

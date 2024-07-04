@@ -1,6 +1,8 @@
 # Helicast
 
-For environment management, we recommend [miniforge](https://github.com/conda-forge/miniforge).
+
+
+For environment management, we use [rye](https://rye.astral.sh/).
 
 
 ## 1 Installation
@@ -17,7 +19,22 @@ To install the package, you can use
 pip install git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@XYZ
 ```
 where `XYZ` is the tag, branch name or commit hash. If you omit `@XYZ`, it will install
-the main branch (we do not recommend doing that)
+the main branch (we do not recommend doing that).
+
+If you want to add the dependency in your pyproject.toml file, you can add like this
+```toml
+[project]
+# ...
+dependencies = [
+    # ...
+    "helicast @ git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@v0.1.1",
+    #...
+]
+```
+replace `v0.1.1` by the version you want. The equivalent rye command is
+```bash
+rye add 'helicast@git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@v0.1.1' --verbose
+```
 
 ### 1.2 Install as a Python library (editable)
 (Not recommended!)
@@ -41,11 +58,6 @@ specific branch! This set up will make your project less reproducible.
 ### 1.3 Install the `helicast` development environment
 
 If you want to develop `helicast`, you can do so quite easily :) 
-1. Clone the repo on your local machine `git clone git@gitlab.com:trelltech/data-science/helicast.git`
-2. Navigate to the downloaded repo `cd helicast`
-3. Run the bash script `./conda_setup.sh`
-
-The script will create an environment `helicast` in which python 3.10 and `helicast`
-dependencies will be installed and `helicast` will be installed in editable mode. You can
-change the name of the conda environment passing `--env-name ENV_NAME` to the script. If
-an environment with the same name exist, the script will forcefully overwrite it!
+1. Clone the repo on your local machine `git clone git@gitlab.com:trelltech/data-science/helicast.git`;
+2. Navigate to the downloaded repo `cd helicast`;
+3. Install the environment with rye `rye sync`.

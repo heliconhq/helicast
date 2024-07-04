@@ -1,11 +1,11 @@
 import logging
 from copy import deepcopy
-from typing import Annotated, Any, List, Sequence, Union
+from typing import Annotated, List, Sequence, Union
 
 import pandas as pd
 from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter, ValidationError
 
-from helicast.base import StatelessDFTransformer
+from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.column_filters._base import AllSelector, ColumnFilter
 from helicast.logging import configure_logging
 
@@ -21,7 +21,7 @@ __all__ = [
 
 
 def _validate_positive_shifts(
-    v: Union[PositiveInt, List[PositiveInt]]
+    v: Union[PositiveInt, List[PositiveInt]],
 ) -> List[PositiveInt]:
     """Use in a validator to validate shifts.
 
@@ -46,7 +46,7 @@ def _validate_positive_shifts(
             return value
         except ValidationError as e:
             error = e
-    except ValidationError as e:
+    except ValidationError:
         pass
     if error:
         raise ValueError(error)
@@ -56,7 +56,8 @@ def _validate_positive_shifts(
     return value
 
 
-class LaggedColumnsAdder(StatelessDFTransformer):
+@dataclass
+class LaggedColumnsAdder(StatelessTransformerMixin, BaseEstimator):
     """_summary_
 
     Args:
@@ -88,9 +89,6 @@ class LaggedColumnsAdder(StatelessDFTransformer):
 
         return X_new
 
-    def fit_transform(self, X: pd.DataFrame, y=None, **kwargs):
-        return self.transform(X, **kwargs)
-
 
 def add_lagged_columns(
     df: pd.DataFrame,
@@ -102,7 +100,8 @@ def add_lagged_columns(
     return tr.fit_transform(df, None)
 
 
-class FutureColumnsAdder(StatelessDFTransformer):
+@dataclass
+class FutureColumnsAdder(StatelessTransformerMixin, BaseEstimator):
     """_summary_
 
     Args:
@@ -133,9 +132,6 @@ class FutureColumnsAdder(StatelessDFTransformer):
             X_new = X_new.iloc[: -max(self.futures)]
 
         return X_new
-
-    def fit_transform(self, X: pd.DataFrame, y=None, **kwargs):
-        return self.transform(X, **kwargs)
 
 
 def add_future_columns(

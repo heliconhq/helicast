@@ -1,5 +1,4 @@
 import logging
-from contextlib import contextmanager
 
 __all__ = ["configure_logging"]
 
