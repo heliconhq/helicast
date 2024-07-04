@@ -36,9 +36,9 @@ class PredictorMixin(ABC):
             The predicted target values. Shape (n_samples, n_targets).
         """
         check_is_fitted(self)
-        X = self.validate_X(X, mode=EstimatorMode.PREDICT)
+        X = self._validate_X(X, mode=EstimatorMode.PREDICT)
         y_pred = self._predict(X)
-        y_pred = self.validate_y(y_pred, mode=EstimatorMode.PREDICT)
+        y_pred = self._validate_y(y_pred, mode=EstimatorMode.PREDICT)
         return y_pred
 
     def fit_predict(

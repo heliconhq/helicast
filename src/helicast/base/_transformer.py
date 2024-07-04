@@ -27,7 +27,7 @@ class TransformerMixin(ABC):
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         check_is_fitted(self)
-        X = self.validate_X(X, mode=EstimatorMode.TRANSFORM)
+        X = self._validate_X(X, mode=EstimatorMode.TRANSFORM)
         X_tr = self._transform(X)
         self.feature_names_out_ = X_tr.columns.tolist()
         return X_tr
@@ -62,7 +62,7 @@ class InvertibleTransformerMixin(TransformerMixin):
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def inverse_transform(self, X: pd.DataFrame) -> pd.DataFrame:
         check_is_fitted(self)
-        X = self.validate_X(X, mode=EstimatorMode.INVERSE_TRANSFORM)
+        X = self._validate_X(X, mode=EstimatorMode.INVERSE_TRANSFORM)
         X_inv_tr = self._inverse_transform(X)
-        X_inv_tr = self.validate_X(X_inv_tr, mode=EstimatorMode.TRANSFORM)
+        X_inv_tr = self._validate_X(X_inv_tr, mode=EstimatorMode.TRANSFORM)
         return X_inv_tr
