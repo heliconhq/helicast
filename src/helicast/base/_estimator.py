@@ -10,8 +10,7 @@ from strenum import StrEnum
 from typing_extensions import Self
 
 from helicast.base import dataclass
-from helicast.utils import get_param_type_mapping
-from helicast.validation import validate_equal_to_reference
+from helicast.utils import get_param_type_mapping, validate_equal_to_reference
 
 __all__ = [
     "BaseEstimator",
