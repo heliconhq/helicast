@@ -30,6 +30,7 @@ def validate_scalar_to_list(value: Any, _type: Type[T]) -> List[T]:
     """Validate a scalar value to a list of the specified type.
 
     .. code-block:: python
+
         from helicast.validation import validate_scalar_to_list
 
         print(validate_scalar_to_list(1, int))

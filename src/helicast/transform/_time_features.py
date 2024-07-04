@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 import holidays
 import pandas as pd
 
-from helicast.base import StatelessDFTransformer
+from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
 
 configure_logging()
@@ -41,7 +41,6 @@ def _validate_time_index(
 def _create_sweden_public_holiday_map(
     min_date: pd.Timestamp, max_date: pd.Timestamp, return_type="series"
 ):
-
     hd = pd.Series(holidays.SE(years=range(min_date.year, max_date.year + 1)))
     hd = hd[hd.str.lower() != "sunday"]
     hd.index = pd.to_datetime(hd.index).strftime("%Y-%m-%d")
@@ -62,13 +61,13 @@ def _create_sweden_public_holiday_map(
     return hd
 
 
-class HourColumnAdder(StatelessDFTransformer):
+@dataclass
+class HourColumnAdder(StatelessTransformerMixin, BaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame, None] = None, **kwargs
     ) -> pd.DataFrame:
-
         time_index = _validate_time_index(X, timestamp_column=self.timestamp_column)
 
         X_new = X.copy()
@@ -83,13 +82,13 @@ def add_hour_column(
     return HourColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
 
 
-class DayOfWeekColumnAdder(StatelessDFTransformer):
+@dataclass
+class DayOfWeekColumnAdder(StatelessTransformerMixin, BaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame, None] = None, **kwargs
     ) -> pd.DataFrame:
-
         time_index = _validate_time_index(X, timestamp_column=self.timestamp_column)
 
         X_new = X.copy()
@@ -104,13 +103,13 @@ def add_day_of_week_column(
     return DayOfWeekColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
 
 
-class DayOfYearColumnAdder(StatelessDFTransformer):
+@dataclass
+class DayOfYearColumnAdder(StatelessTransformerMixin, BaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame, None] = None, **kwargs
     ) -> pd.DataFrame:
-
         time_index = _validate_time_index(X, timestamp_column=self.timestamp_column)
 
         X_new = X.copy()
@@ -125,7 +124,8 @@ def add_day_of_year_column(
     return DayOfYearColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
 
 
-class SwedenPublicHolidayColumnAdder(StatelessDFTransformer):
+@dataclass
+class SwedenPublicHolidayColumnAdder(StatelessTransformerMixin, BaseEstimator):
     timestamp_column: Optional[str] = None
 
     encoding: Literal["int", "bool", "str"] = "int"
@@ -133,7 +133,6 @@ class SwedenPublicHolidayColumnAdder(StatelessDFTransformer):
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame, None] = None, **kwargs
     ) -> pd.DataFrame:
-
         time_index = _validate_time_index(X, timestamp_column=self.timestamp_column)
 
         hd = _create_sweden_public_holiday_map(time_index.min(), time_index.max())
@@ -161,7 +160,6 @@ def add_sweden_public_holiday_column(
     timestamp_column: Optional[str] = None,
     encoding: Literal["int", "bool", "str"] = "int",
 ) -> pd.DataFrame:
-
     tr = SwedenPublicHolidayColumnAdder(
         timestamp_column=timestamp_column, encoding=encoding
     )

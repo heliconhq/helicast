@@ -57,7 +57,7 @@ class BaseEstimator(_SKLearnBaseEstimator, ABC):
     ##################
 
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
-    def validate_X(self, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
+    def _validate_X(self, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
         # If fitting, store the feature names and return the input data
         if mode == EstimatorMode.FIT:
             self.feature_names_in_ = X.columns.tolist()
@@ -75,7 +75,7 @@ class BaseEstimator(_SKLearnBaseEstimator, ABC):
         return X[columns]
 
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
-    def validate_y(
+    def _validate_y(
         self, y: Union[pd.DataFrame, pd.Series, None], *, mode: EstimatorMode
     ) -> Union[pd.DataFrame, None]:
         if y is None:
@@ -103,15 +103,15 @@ class BaseEstimator(_SKLearnBaseEstimator, ABC):
             raise RuntimeError(f"Validating y in {mode=}. This is unexpected!")
         return y
 
-    def validate_X_y(
+    def _validate_X_y(
         self,
         X: pd.DataFrame,
         y: Union[pd.DataFrame, pd.Series, None] = None,
         *,
         mode: EstimatorMode,
     ) -> Tuple[pd.DataFrame, Union[pd.DataFrame, None]]:
-        X = self.validate_X(X, mode=mode)
-        y = self.validate_y(y, mode=mode)
+        X = self._validate_X(X, mode=mode)
+        y = self._validate_y(y, mode=mode)
 
         if mode == EstimatorMode.FIT and y is not None and len(X) != len(y):
             raise ValueError(
@@ -160,6 +160,6 @@ class BaseEstimator(_SKLearnBaseEstimator, ABC):
         Returns:
             The fitted estimator.
         """
-        X, y = self.validate_X_y(X, y, mode=EstimatorMode.FIT)
+        X, y = self._validate_X_y(X, y, mode=EstimatorMode.FIT)
         self._fit(X, y, **kwargs)
         return self
