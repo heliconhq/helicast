@@ -6,6 +6,10 @@ import pandas as pd
 
 from helicast.logging import configure_logging
 
+__all__ = [
+    "auto_convert_to_datetime_index",
+]
+
 configure_logging()
 logger = getLogger(__name__)
 
@@ -26,7 +30,7 @@ DATE_FORMATS = [i.split(" ")[0] for i in DATETIME_FORMATS]
 
 
 def auto_convert_to_datetime_index(
-    dates: Union[np.ndarray, List, pd.Series, pd.DatetimeIndex]
+    dates: Union[np.ndarray, List, pd.Series, pd.DatetimeIndex],
 ) -> pd.DatetimeIndex:
     """Auto-convert an array-like object of dates (as string) to a pd.DatetimeIndex.
 
