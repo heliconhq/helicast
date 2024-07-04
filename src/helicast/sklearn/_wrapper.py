@@ -48,6 +48,8 @@ class HelicastWrapper(BaseEstimator, InvertibleTransformerMixin, PredictorMixin)
     def _fit(
         self, X: pd.DataFrame, y: Union[pd.DataFrame, pd.Series, None], **kwargs
     ) -> Self:
+        if y is not None:
+            y = y.squeeze()
         return self.estimator.fit(X, y)
 
     @check_method(name="transform")
