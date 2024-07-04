@@ -9,6 +9,7 @@ from pydantic import field_validator
 from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
+from helicast.utils import link_docs_to_class
 
 configure_logging()
 logger = getLogger(__name__)
@@ -76,10 +77,11 @@ class RegexSelector(RegexBase):
         return RegexRemover(patterns=self.patterns)
 
 
+@link_docs_to_class(cls=RegexSelector)
 def select_columns_by_regex(
-    df: pd.DataFrame, patterns: Union[str, List[str]]
+    X: pd.DataFrame, patterns: Union[str, List[str]]
 ) -> pd.DataFrame:
-    return RegexSelector(patterns=patterns).fit_transform(df)
+    return RegexSelector(patterns=patterns).fit_transform(X)
 
 
 @dataclass
@@ -99,7 +101,8 @@ class RegexRemover(RegexBase):
         return RegexSelector(patterns=self.patterns)
 
 
+@link_docs_to_class(cls=RegexRemover)
 def remove_columns_by_regex(
-    df: pd.DataFrame, patterns: Union[str, List[str]]
+    X: pd.DataFrame, patterns: Union[str, List[str]]
 ) -> pd.DataFrame:
-    return RegexRemover(patterns=patterns).fit_transform(df)
+    return RegexRemover(patterns=patterns).fit_transform(X)

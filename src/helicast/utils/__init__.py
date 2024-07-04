@@ -1,5 +1,6 @@
 from helicast.utils._collections import *
 from helicast.utils._date_utils import *
+from helicast.utils._docs import *
 from helicast.utils._inspect import *
 
 __all__ = []
