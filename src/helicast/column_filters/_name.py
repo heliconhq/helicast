@@ -8,6 +8,7 @@ from pydantic import field_validator
 from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
+from helicast.utils import link_docs_to_class
 
 configure_logging()
 logger = getLogger(__name__)
@@ -76,10 +77,11 @@ class NameSelector(NameBase):
         return list(set(self.names).intersection(set(X.columns)))
 
 
+@link_docs_to_class(cls=NameSelector)
 def select_columns_by_names(
-    df: pd.DataFrame, names: Union[str, List[str]], strict: bool = True
+    X: pd.DataFrame, names: Union[str, List[str]], strict: bool = True
 ) -> pd.DataFrame:
-    return NameSelector(names=names, strict=strict).fit_transform(df)
+    return NameSelector(names=names, strict=strict).fit_transform(X)
 
 
 @dataclass
@@ -100,7 +102,8 @@ class NameRemover(NameBase):
         return list(set(X.columns) - set(self.names))
 
 
+@link_docs_to_class(cls=NameRemover)
 def remove_columns_by_names(
-    df: pd.DataFrame, names: Union[str, List[str]], strict: bool = True
+    X: pd.DataFrame, names: Union[str, List[str]], strict: bool = True
 ) -> pd.DataFrame:
-    return NameRemover(names=names, strict=strict).fit_transform(df)
+    return NameRemover(names=names, strict=strict).fit_transform(X)

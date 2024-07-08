@@ -1,4 +1,3 @@
-from functools import cached_property
 from typing import Any, List, Tuple
 
 from sklearn.pipeline import Pipeline as _SKLPipeline
@@ -20,7 +19,6 @@ class Pipeline(_SKLPipeline):
                 steps[i] = (steps[i][0], HelicastWrapper(steps[i][1]))
         super().__init__(steps)
 
-    @cached_property
     def feature_names_out_(self) -> List:
         if hasattr(self.steps[-1][1], "feature_names_out_"):
             return self.steps[-1][1].feature_names_out_
@@ -30,7 +28,6 @@ class Pipeline(_SKLPipeline):
             "The last step in the pipeline does not have the attribute 'feature_names_out_'"
         )
 
-    @cached_property
     def target_names_in_(self) -> List:
         if hasattr(self.steps[0][1], "target_names_in_"):
             return self.steps[0][1].target_names_in_

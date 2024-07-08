@@ -8,6 +8,7 @@ from pydantic import field_validator
 from helicast.base import dataclass
 from helicast.column_filters._base import ColumnFilter
 from helicast.logging import configure_logging
+from helicast.utils import link_docs_to_class
 
 configure_logging()
 logger = getLogger(__name__)
@@ -63,10 +64,11 @@ class DTypeSelector(DTypeBase):
         return DTypeRemover(dtypes=self.dtypes)
 
 
+@link_docs_to_class(cls=DTypeSelector)
 def select_columns_by_dtype(
-    df: pd.DataFrame, dtypes: Union[str, List[str]]
+    X: pd.DataFrame, dtypes: Union[str, List[str]]
 ) -> pd.DataFrame:
-    return DTypeSelector(dtypes=dtypes).fit_transform(df)
+    return DTypeSelector(dtypes=dtypes).fit_transform(X)
 
 
 class DTypeRemover(DTypeBase):
@@ -85,7 +87,8 @@ class DTypeRemover(DTypeBase):
         return DTypeSelector(dtypes=self.dtype)
 
 
+@link_docs_to_class(cls=DTypeRemover)
 def remove_columns_by_dtype(
-    df: pd.DataFrame, dtypes: Union[str, List[str]]
+    X: pd.DataFrame, dtypes: Union[str, List[str]]
 ) -> pd.DataFrame:
-    return DTypeRemover(dtypes=dtypes).fit_transform(df)
+    return DTypeRemover(dtypes=dtypes).fit_transform(X)

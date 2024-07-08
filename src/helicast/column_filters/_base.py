@@ -8,7 +8,7 @@ from typing_extensions import Self
 
 from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
-from helicast.validation import validate_subset_of_reference
+from helicast.utils import validate_subset_of_reference
 
 configure_logging()
 logger = getLogger(__name__)

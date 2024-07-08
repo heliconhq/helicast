@@ -6,6 +6,7 @@ import pandas as pd
 
 from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
+from helicast.utils import link_docs_to_class
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -76,10 +77,11 @@ class HourColumnAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=HourColumnAdder)
 def add_hour_column(
-    df: pd.DataFrame, timestamp_column: Optional[str] = None
+    X: pd.DataFrame, timestamp_column: Optional[str] = None
 ) -> pd.DataFrame:
-    return HourColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
+    return HourColumnAdder(timestamp_column=timestamp_column).fit_transform(X)
 
 
 @dataclass
@@ -97,10 +99,11 @@ class DayOfWeekColumnAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=DayOfWeekColumnAdder)
 def add_day_of_week_column(
-    df: pd.DataFrame, timestamp_column: Optional[str] = None
+    X: pd.DataFrame, timestamp_column: Optional[str] = None
 ) -> pd.DataFrame:
-    return DayOfWeekColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
+    return DayOfWeekColumnAdder(timestamp_column=timestamp_column).fit_transform(X)
 
 
 @dataclass
@@ -118,10 +121,11 @@ class DayOfYearColumnAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=DayOfYearColumnAdder)
 def add_day_of_year_column(
-    df: pd.DataFrame, timestamp_column: Optional[str] = None
+    X: pd.DataFrame, timestamp_column: Optional[str] = None
 ) -> pd.DataFrame:
-    return DayOfYearColumnAdder(timestamp_column=timestamp_column).fit_transform(df)
+    return DayOfYearColumnAdder(timestamp_column=timestamp_column).fit_transform(X)
 
 
 @dataclass
@@ -155,12 +159,13 @@ class SwedenPublicHolidayColumnAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=SwedenPublicHolidayColumnAdder)
 def add_sweden_public_holiday_column(
-    df: pd.DataFrame,
+    X: pd.DataFrame,
     timestamp_column: Optional[str] = None,
     encoding: Literal["int", "bool", "str"] = "int",
 ) -> pd.DataFrame:
     tr = SwedenPublicHolidayColumnAdder(
         timestamp_column=timestamp_column, encoding=encoding
     )
-    return tr.fit_transform(df)
+    return tr.fit_transform(X)

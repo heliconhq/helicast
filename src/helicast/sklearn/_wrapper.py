@@ -1,4 +1,5 @@
 from functools import partial, wraps
+from inspect import isclass
 from typing import Any, Union
 
 import numpy as np
@@ -12,11 +13,20 @@ from helicast.base import (
     PredictorMixin,
     dataclass,
 )
-from helicast.validation import validate_equal_to_reference
+from helicast.utils import validate_equal_to_reference
 
 __all__ = [
     "HelicastWrapper",
 ]
+
+
+def _has_method(cls: type, name: str) -> bool:
+    """ "Check if a class has a method with the given name."""
+    if not isclass(cls):
+        raise TypeError(f"Expected a class, got {type(cls)}.")
+    if hasattr(cls, name) and callable(getattr(cls, name, None)):
+        return True
+    return False
 
 
 def check_method(method=None, *, name: str):
@@ -26,7 +36,7 @@ def check_method(method=None, *, name: str):
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        if not hasattr(self.estimator, name):
+        if not _has_method(self.estimator, name):
             estimator_name = self.estimator.__class__.__name__
             raise AttributeError(
                 f"Estimator {estimator_name} does not have '{name}' method."

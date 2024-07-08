@@ -1,4 +1,5 @@
 from helicast.transform._feature_engineering import *
+from helicast.transform._index import *
 from helicast.transform._time_features import *
 
 __all__ = []

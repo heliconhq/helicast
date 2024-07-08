@@ -8,6 +8,7 @@ from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter, Validatio
 from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.column_filters._base import AllSelector, ColumnFilter
 from helicast.logging import configure_logging
+from helicast.utils import link_docs_to_class
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ def _validate_positive_shifts(
     """Use in a validator to validate shifts.
 
     * If ``v`` is an integer, it checks that it
-    is a strictly positive number and then returns ``list(range(v, v+1))``, e.g.,
+    is a strictly positive number and then returns ``list(range(1, v+1))``, e.g.,
     ``v=2`` will return ``[1, 2]``.
     * If ``v`` is some sort of iterable, it casts it onto a Python list and each element
     is checked to be strictly positive, e.g., ``v=[1, 3, 5]`` will work while
@@ -90,14 +91,15 @@ class LaggedColumnsAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=LaggedColumnsAdder)
 def add_lagged_columns(
-    df: pd.DataFrame,
+    X: pd.DataFrame,
     lags: Union[PositiveInt, Sequence[PositiveInt]],
     filter: ColumnFilter = AllSelector(),
     dropna_boundary: bool = True,
 ):
     tr = LaggedColumnsAdder(lags=lags, filter=filter, dropna_boundary=dropna_boundary)
-    return tr.fit_transform(df, None)
+    return tr.fit_transform(X, None)
 
 
 @dataclass
@@ -134,8 +136,9 @@ class FutureColumnsAdder(StatelessTransformerMixin, BaseEstimator):
         return X_new
 
 
+@link_docs_to_class(cls=FutureColumnsAdder)
 def add_future_columns(
-    df: pd.DataFrame,
+    X: pd.DataFrame,
     futures: Union[PositiveInt, Sequence[PositiveInt]],
     filter: ColumnFilter = AllSelector(),
     dropna_boundary: bool = True,
@@ -143,4 +146,4 @@ def add_future_columns(
     tr = FutureColumnsAdder(
         futures=futures, filter=filter, dropna_boundary=dropna_boundary
     )
-    return tr.fit_transform(df, None)
+    return tr.fit_transform(X, None)
