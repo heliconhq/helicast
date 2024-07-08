@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from logging import getLogger
-from typing import List
+from typing import Any, List
 
 import pandas as pd
 from pydantic import validate_call
@@ -38,6 +38,9 @@ class ColumnFilter(StatelessTransformerMixin, BaseEstimator):
             List of selected columns.
         """
         pass
+
+    def __call__(self, X: pd.DataFrame) -> List:
+        return self.select_columns(X)
 
     @validate_call(config={"arbitrary_types_allowed": True})
     def select_columns(self, X: pd.DataFrame) -> List:
