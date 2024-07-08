@@ -20,11 +20,9 @@ __all__ = [
 ]
 
 
-def _has_method(cls: type, name: str) -> bool:
+def _has_method(obj, name: str) -> bool:
     """ "Check if a class has a method with the given name."""
-    if not isclass(cls):
-        raise TypeError(f"Expected a class, got {type(cls)}.")
-    if hasattr(cls, name) and callable(getattr(cls, name, None)):
+    if hasattr(obj, name) and callable(getattr(obj, name, None)):
         return True
     return False
 
