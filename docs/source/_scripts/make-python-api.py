@@ -12,6 +12,7 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel
 
 
 def get_git_repo_root() -> Optional[str]:
@@ -137,9 +138,6 @@ def import_class_from_string(full_class_string) -> type:
     return cls
 
 
-from pydantic import BaseModel
-
-
 def write_files(registry: dict) -> List[str]:
     new_registry = {}
 
@@ -196,7 +194,7 @@ def write_files(registry: dict) -> List[str]:
                 fhandle.write(f"{'-'*int(1.5 *len(name))}\n")
                 fhandle.write(f"\n")
                 fhandle.write(f".. autodata:: {full_name}\n")
-                # fhandle.write(f"    :annotation:\n")
+                fhandle.write(f"    :annotation:\n")
 
     return new_registry
 

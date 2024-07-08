@@ -7,6 +7,9 @@ def link_docs_to_class(func=None, *, cls):
     if func is None:
         return partial(link_docs_to_class, cls=cls)
 
+    if cls.__doc__ is None:
+        return func
+
     docs = cls.__doc__.split("\n")
     for i, line in enumerate(docs):
         if line.strip() == "Args:":
