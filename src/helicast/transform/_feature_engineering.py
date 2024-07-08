@@ -4,6 +4,7 @@ from typing import Annotated, List, Sequence, Union
 
 import pandas as pd
 from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter, ValidationError
+from pydantic.fields import Field
 
 from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.column_filters._base import AllSelector, ColumnFilter
@@ -72,7 +73,7 @@ class LaggedColumnsAdder(StatelessTransformerMixin, BaseEstimator):
         BeforeValidator(_validate_positive_shifts),
     ]
 
-    filter: ColumnFilter = AllSelector()
+    filter: ColumnFilter = Field(default_factory=AllSelector)
 
     dropna_boundary: bool = Field(default=True)
 
@@ -117,7 +118,7 @@ class FutureColumnsAdder(StatelessTransformerMixin, BaseEstimator):
         BeforeValidator(_validate_positive_shifts),
     ]
 
-    filter: ColumnFilter = AllSelector()
+    filter: ColumnFilter = Field(default_factory=AllSelector)
 
     dropna_boundary: bool = Field(default=True)
 
