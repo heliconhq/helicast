@@ -1,12 +1,12 @@
 from logging import getLogger
-from typing import List, Union
+from typing import Annotated, List, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import field_validator
+from pydantic import BeforeValidator
 
 from helicast.base import dataclass
-from helicast.column_filters._base import ColumnFilter
+from helicast.column_filters._base import ColumnFilter, _cast_type_to_list
 from helicast.logging import configure_logging
 from helicast.utils import link_docs_to_class
 
@@ -24,18 +24,12 @@ __all__ = [
 
 @dataclass
 class NameBase(ColumnFilter):
-    """Base model for name-based filtering."""
+    """Abstract base class name-based filtering. Both ``NameSelector`` and
+    ``NameRemover`` inherit from this class."""
 
-    names: Union[str, List[str]]
+    names: Annotated[Union[str, List[str]], BeforeValidator(_cast_type_to_list(str))]
 
     strict: bool = True
-
-    @field_validator("names")
-    @classmethod
-    def auto_cast_to_list(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str):
-            v = [v]
-        return v
 
     def _check_names(self, X: pd.DataFrame) -> None:
         extras = set(self.names) - set(X.columns)

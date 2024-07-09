@@ -1,14 +1,14 @@
 from abc import abstractmethod
 from logging import getLogger
-from typing import Any, List
+from typing import Any, Callable, List
 
 import pandas as pd
 from pydantic import validate_call
 from typing_extensions import Self
 
-from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
-from helicast.utils import validate_subset_of_reference
+from helicast.utils import maybe_reorder_like
 
 configure_logging()
 logger = getLogger(__name__)
@@ -18,8 +18,19 @@ __all__ = [
 ]
 
 
+def _cast_type_to_list(_type) -> Callable[[Any], Any]:
+    """Create a function that casts a value to a list if it is of a certain type."""
+
+    def _cast(value: Any) -> Any:
+        if isinstance(value, _type):
+            return [value]
+        return value
+
+    return _cast
+
+
 @dataclass
-class ColumnFilter(StatelessTransformerMixin, BaseEstimator):
+class ColumnFilter(StatelessTransformerMixin, HelicastBaseEstimator):
     """Abstract base class for DataFrame columns filtering. Child classes need to
     implement the ``_select_columns`` method which takes a pd.DataFrame in and outputs
     a list of columns which are to be selected.
@@ -40,6 +51,16 @@ class ColumnFilter(StatelessTransformerMixin, BaseEstimator):
         pass
 
     def __call__(self, X: pd.DataFrame) -> List:
+        """Select the columns of a pd.DataFrame according to the object rule and
+        return them as a list. The list is ordered such that it follows ``X.columns``
+        ordering.
+
+        Args:
+            X: Input pd.DataFrame.
+
+        Returns:
+            A list of column names which match with the condition.
+        """
         return self.select_columns(X)
 
     @validate_call(config={"arbitrary_types_allowed": True})
@@ -55,7 +76,7 @@ class ColumnFilter(StatelessTransformerMixin, BaseEstimator):
             A list of column names which match with the condition.
         """
         columns = self._select_columns(X)
-        columns = validate_subset_of_reference(columns, X.columns, reorder=True)
+        columns = maybe_reorder_like(columns, X.columns)
         return columns
 
     def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -156,7 +177,7 @@ class ColumnFilterNot(ColumnFilter):
 
 @dataclass
 class AllSelector(ColumnFilter):
-    """Dummy column filter that selects all the columns (does not modify the DataFrame)."""
+    """Dummy column filter that selects all the columns."""
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
         return X.columns.to_list()

@@ -1,12 +1,12 @@
 from logging import getLogger
-from typing import List, Union
+from typing import Annotated, List, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import field_validator
+from pydantic import BeforeValidator
 
 from helicast.base import dataclass
-from helicast.column_filters._base import ColumnFilter
+from helicast.column_filters._base import ColumnFilter, _cast_type_to_list
 from helicast.logging import configure_logging
 from helicast.utils import link_docs_to_class
 
@@ -24,14 +24,7 @@ __all__ = [
 
 @dataclass
 class DTypeBase(ColumnFilter):
-    dtypes: Union[str, List[str]]
-
-    @field_validator("dtypes")
-    @classmethod
-    def auto_cast_to_list(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str):
-            v = [v]
-        return v
+    dtypes: Annotated[Union[str, List[str]], BeforeValidator(_cast_type_to_list(str))]
 
     def __or__(self, __value: object) -> ColumnFilter:
         if isinstance(__value, self.__class__):
