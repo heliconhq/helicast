@@ -108,10 +108,6 @@ class ColumnFilterOr(ColumnFilter):
     left: ColumnFilter
     right: ColumnFilter
 
-    class Config:
-        arbitrary_types_allowed = True
-        strict = True
-
     def _select_columns(self, X: pd.DataFrame) -> List:
         left_columns = self.left.select_columns(X)
         right_columns = self.right.select_columns(X)
@@ -135,10 +131,6 @@ class ColumnFilterAnd(ColumnFilter):
     left: ColumnFilter
     right: ColumnFilter
 
-    class Config:
-        arbitrary_types_allowed = True
-        strict = True
-
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
         left_columns = self.left.select_columns(X)
         right_columns = self.right.select_columns(X)
@@ -161,10 +153,6 @@ class ColumnFilterNot(ColumnFilter):
     """
 
     filter: ColumnFilter
-
-    class Config:
-        arbitrary_types_allowed = True
-        strict = True
 
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
         columns = self.filter.select_columns(X)

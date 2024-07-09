@@ -2,8 +2,9 @@ from copy import deepcopy
 from typing import Annotated, List
 
 import pandas as pd
-from pydantic import BaseModel
 from pydantic.functional_validators import AfterValidator
+
+from helicast.base import dataclass
 
 __all__ = [
     "TimeDataFrame",
@@ -16,7 +17,8 @@ __all__ = [
 ]
 
 
-class TimeDataFrameValidator(BaseModel):
+@dataclass
+class TimeDataFrameValidator:
     """Validator for a time series DataFrame. The type checking is implemented in the
     ``__call__`` method. If the DataFrame index is a proper DateTimeIndex, returns a
     DataFrame where:
@@ -40,9 +42,6 @@ class TimeDataFrameValidator(BaseModel):
     """
 
     allowed_columns: List[str] | None = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def __call__(self, df: pd.DataFrame) -> pd.DataFrame:
         if not isinstance(df, pd.DataFrame):

@@ -2,10 +2,7 @@ from typing import Any, List, Tuple
 
 from sklearn.pipeline import Pipeline as _SKLPipeline
 
-from helicast.base import (
-    BaseEstimator,
-)
-from helicast.sklearn._wrapper import HelicastWrapper
+from helicast.sklearn._wrapper import helicast_auto_wrap
 
 __all__ = [
     "Pipeline",
@@ -15,10 +12,10 @@ __all__ = [
 class Pipeline(_SKLPipeline):
     def __init__(self, steps: List[Tuple[str, Any]]):
         for i in range(len(steps)):
-            if not isinstance(steps[i][1], BaseEstimator):
-                steps[i] = (steps[i][0], HelicastWrapper(steps[i][1]))
+            steps[i] = (steps[i][0], helicast_auto_wrap(steps[i][1]))
         super().__init__(steps)
 
+    @property
     def feature_names_out_(self) -> List:
         if hasattr(self.steps[-1][1], "feature_names_out_"):
             return self.steps[-1][1].feature_names_out_
@@ -28,12 +25,10 @@ class Pipeline(_SKLPipeline):
             "The last step in the pipeline does not have the attribute 'feature_names_out_'"
         )
 
+    @property
     def target_names_in_(self) -> List:
         if hasattr(self.steps[0][1], "target_names_in_"):
             return self.steps[0][1].target_names_in_
         raise AttributeError(
             "The first step in the pipeline does not have the attribute 'target_names_in_'"
         )
-
-    def score(self, X, y, sample_weight=None):
-        return self.steps[-1][1].score(X, y, sample_weight)

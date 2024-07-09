@@ -3,7 +3,7 @@ from typing import List, Union
 
 import pandas as pd
 
-from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.utils import link_docs_to_class
 
 __all__ = [
@@ -15,7 +15,7 @@ __all__ = [
 
 
 @dataclass
-class IndexSorter(StatelessTransformerMixin, BaseEstimator):
+class IndexSorter(StatelessTransformerMixin, HelicastBaseEstimator):
     """Sort the index of a DataFrame.
 
     Args:
@@ -42,7 +42,7 @@ def sort_index(X: pd.DataFrame, ascending: bool = True) -> pd.DataFrame:
 
 
 @dataclass
-class IndexRenamer(StatelessTransformerMixin, BaseEstimator):
+class IndexRenamer(StatelessTransformerMixin, HelicastBaseEstimator):
     """Rename the index of a DataFrame.
 
     Args:

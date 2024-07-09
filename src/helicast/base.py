@@ -23,6 +23,7 @@ __all__ = [
     "PredictorMixin",
 ]
 
+
 DEFAULT_CONFIG = {"arbitrary_types_allowed": True}
 
 
