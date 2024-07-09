@@ -1,13 +1,10 @@
 import logging
-from copy import deepcopy
-from typing import Annotated, List, Sequence, Union
+from typing import Annotated, Iterable, List, Sequence, Union
 
 import pandas as pd
-from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter, ValidationError
-from pydantic.fields import Field
+from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter
 
-from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
-from helicast.column_filters._base import AllSelector, ColumnFilter
+from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
 from helicast.utils import link_docs_to_class
 
@@ -22,72 +19,55 @@ __all__ = [
 ]
 
 
-def _validate_positive_shifts(
-    v: Union[PositiveInt, List[PositiveInt]],
+def _validate_positive_range(
+    value: Union[PositiveInt, List[PositiveInt]],
 ) -> List[PositiveInt]:
-    """Use in a validator to validate shifts.
+    """Validate positive ranges. Examples:
 
-    * If ``v`` is an integer, it checks that it
-    is a strictly positive number and then returns ``list(range(1, v+1))``, e.g.,
-    ``v=2`` will return ``[1, 2]``.
-    * If ``v`` is some sort of iterable, it casts it onto a Python list and each element
-    is checked to be strictly positive, e.g., ``v=[1, 3, 5]`` will work while
-    ``v=[0, 1, 3, 5]`` won't.
-
+    * ``value = 2`` or ``value = "2"`` will return ``[1, 2]``;
+    * ``value = (1, 3, 5)`` will return ``[1, 3, 5]``;
     """
+    if isinstance(value, Iterable) and not isinstance(value, str):
+        value = list(value)
+    else:
+        value = TypeAdapter(PositiveInt).validate_python(value)
+        value = list(range(1, value + 1))
 
-    value = deepcopy(v)
-
-    error = None
-    try:
-        value = TypeAdapter(List[int]).validate_python(value)
-        try:
-            value = TypeAdapter(List[PositiveInt]).validate_python(value)
-            if len(value) == 0:
-                raise ValueError(f"{v} gives a list of length 0, should be at least 1!")
-            return value
-        except ValidationError as e:
-            error = e
-    except ValidationError:
-        pass
-    if error:
-        raise ValueError(error)
-
-    value = TypeAdapter(PositiveInt).validate_python(value)
-    value = list(range(1, value + 1))
-    return value
+    return TypeAdapter(List[PositiveInt]).validate_python(value)
 
 
 @dataclass
-class LaggedColumnsAdder(StatelessTransformerMixin, BaseEstimator):
-    """_summary_
+class LaggedColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+    """Add lagged columns to a DataFrame, that is, columns with values from previous
+    rows.
 
     Args:
-        lags: _description_
-        filter: _description_
-        dropna_boundary: _description_
+        shifts: Lag values to use. If a single value is provided, the shifts will be
+            generated from 1 to the provided value. If a list of values is provided,
+            the shifts will be the provided values. Shifts must be positive integers.
+        dropna_boundary: If True, drop the rows with NaN values at the beginning of the
+            DataFrame. Defaults to True.
     """
 
-    lags: Annotated[
+    shifts: Annotated[
         Union[PositiveInt, Sequence[PositiveInt]],
-        BeforeValidator(_validate_positive_shifts),
+        BeforeValidator(_validate_positive_range),
     ]
-
-    filter: ColumnFilter = Field(default_factory=AllSelector)
 
     dropna_boundary: bool = Field(default=True)
 
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame | None] = None, **kwargs
     ) -> None:
-        X_new = X.copy()
-        selected_columns = self.filter(X)
-        for column in selected_columns:
-            for i in self.lags:
-                X_new[f"{column}_lagged_{i}"] = X_new[column].shift(i)
+        new_columns = {}
+        for c in X.columns:
+            for i in self.shifts:
+                new_columns[f"{c}_lagged_{i}"] = X[c].shift(i)
+
+        X_new = pd.concat([X, pd.DataFrame(new_columns)], axis=1)
 
         if self.dropna_boundary:
-            X_new = X_new.iloc[max(self.lags) :]
+            X_new = X_new.iloc[max(self.shifts) :]
 
         return X_new
 
@@ -95,44 +75,44 @@ class LaggedColumnsAdder(StatelessTransformerMixin, BaseEstimator):
 @link_docs_to_class(cls=LaggedColumnsAdder)
 def add_lagged_columns(
     X: pd.DataFrame,
-    lags: Union[PositiveInt, Sequence[PositiveInt]],
-    filter: ColumnFilter = AllSelector(),
+    shifts: Union[PositiveInt, Sequence[PositiveInt]],
     dropna_boundary: bool = True,
 ):
-    tr = LaggedColumnsAdder(lags=lags, filter=filter, dropna_boundary=dropna_boundary)
+    tr = LaggedColumnsAdder(shifts=shifts, dropna_boundary=dropna_boundary)
     return tr.fit_transform(X, None)
 
 
 @dataclass
-class FutureColumnsAdder(StatelessTransformerMixin, BaseEstimator):
-    """_summary_
+class FutureColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+    """Add future columns to a DataFrame.
 
     Args:
-        lags: _description_
-        filter: _description_
-        dropna_boundary: _description_
+        shifts: Future values to use. If a single value is provided, the shifts will
+            be generated from 1 to the provided value. If a list of values is provided,
+            the shifts will be the provided values. Shifts must be positive integers.
+        dropna_boundary: If True, drop the rows with NaN values at the end of the
+            DataFrame. Defaults to True.
     """
 
-    futures: Annotated[
+    shifts: Annotated[
         Union[PositiveInt, Sequence[PositiveInt]],
-        BeforeValidator(_validate_positive_shifts),
+        BeforeValidator(_validate_positive_range),
     ]
-
-    filter: ColumnFilter = Field(default_factory=AllSelector)
 
     dropna_boundary: bool = Field(default=True)
 
     def _transform(
         self, X: pd.DataFrame, y: Union[pd.DataFrame | None] = None, **kwargs
     ) -> None:
-        X_new = X.copy()
-        selected_columns = self.filter(X)
-        for column in selected_columns:
-            for i in self.futures:
-                X_new[f"{column}_future_{i}"] = X_new[column].shift(-i)
+        new_columns = {}
+        for c in X.columns:
+            for i in self.shifts:
+                new_columns[f"{c}_lagged_{i}"] = X[c].shift(-i)
+
+        X_new = pd.concat([X, pd.DataFrame(new_columns)], axis=1)
 
         if self.dropna_boundary:
-            X_new = X_new.iloc[: -max(self.futures)]
+            X_new = X_new.iloc[: -max(self.shifts)]
 
         return X_new
 
@@ -140,11 +120,8 @@ class FutureColumnsAdder(StatelessTransformerMixin, BaseEstimator):
 @link_docs_to_class(cls=FutureColumnsAdder)
 def add_future_columns(
     X: pd.DataFrame,
-    futures: Union[PositiveInt, Sequence[PositiveInt]],
-    filter: ColumnFilter = AllSelector(),
+    shifts: Union[PositiveInt, Sequence[PositiveInt]],
     dropna_boundary: bool = True,
 ):
-    tr = FutureColumnsAdder(
-        futures=futures, filter=filter, dropna_boundary=dropna_boundary
-    )
+    tr = FutureColumnsAdder(shifts=shifts, dropna_boundary=dropna_boundary)
     return tr.fit_transform(X, None)

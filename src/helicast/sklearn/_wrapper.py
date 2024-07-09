@@ -1,14 +1,14 @@
 from functools import partial, wraps
-from inspect import isclass
 from typing import Any, Union
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator as _SKLBaseEstimator
 from sklearn.base import clone
 from typing_extensions import Self
 
 from helicast.base import (
-    BaseEstimator,
+    HelicastBaseEstimator,
     InvertibleTransformerMixin,
     PredictorMixin,
     dataclass,
@@ -17,14 +17,23 @@ from helicast.utils import validate_equal_to_reference
 
 __all__ = [
     "HelicastWrapper",
+    "helicast_auto_wrap",
 ]
 
 
-def _has_method(cls: type, name: str) -> bool:
+def helicast_auto_wrap(obj):
+    """Automatically wraps an object in a HelicastWrapper if it is not already a
+    HelicastBaseEstimator. It accepts sklearn estimators and HelicastBaseEstimators."""
+    if isinstance(obj, HelicastBaseEstimator):
+        return obj
+    elif isinstance(obj, _SKLBaseEstimator):
+        return HelicastWrapper(obj)
+    raise ValueError(f"Cannot wrap object of type {type(obj)}")
+
+
+def _has_method(obj, name: str) -> bool:
     """ "Check if a class has a method with the given name."""
-    if not isclass(cls):
-        raise TypeError(f"Expected a class, got {type(cls)}.")
-    if hasattr(cls, name) and callable(getattr(cls, name, None)):
+    if hasattr(obj, name) and callable(getattr(obj, name, None)):
         return True
     return False
 
@@ -47,7 +56,9 @@ def check_method(method=None, *, name: str):
 
 
 @dataclass
-class HelicastWrapper(BaseEstimator, InvertibleTransformerMixin, PredictorMixin):
+class HelicastWrapper(
+    HelicastBaseEstimator, InvertibleTransformerMixin, PredictorMixin
+):
     estimator: Any
 
     def __post_init__(self):

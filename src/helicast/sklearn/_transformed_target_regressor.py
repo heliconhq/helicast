@@ -41,6 +41,8 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
     def fit(self, X, y, **fit_params):
         ### HELICAST ###
         columns = y.columns.tolist()
+        self.target_names_in_ = columns
+        self.feature_names_in_ = X.columns.tolist()
         index = y.index
         ### HELICAST ###
 
@@ -94,8 +96,5 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
             self.regressor_ = clone(self.regressor)
 
         self.regressor_.fit(X, y_trans, **fit_params)
-
-        if hasattr(self.regressor_, "feature_names_in_"):
-            self.feature_names_in_ = self.regressor_.feature_names_in_
 
         return self

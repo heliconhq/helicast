@@ -2,6 +2,7 @@ from collections import Counter
 from typing import Iterable, List
 
 __all__ = [
+    "maybe_reorder_like",
     "find_duplicates",
     "validate_no_duplicates",
     "validate_equal_to_reference",
@@ -9,6 +10,26 @@ __all__ = [
     "check_no_missing_elements",
     "check_no_extra_elements",
 ]
+
+
+def maybe_reorder_like(value: Iterable, reference: Iterable) -> List:
+    """Maybe reorder the elements of ``value`` according to the ordering in
+    ``reference``. Reordering happens only if the elements of ``value`` are a subset of
+    ``reference``. Both ``value`` and ``reference`` must not contain duplicates.
+
+    Args:
+        value: Iterable to maybe reorder.
+        reference: Reference iterable.
+
+    Returns:
+        Maybe reordered list.
+    """
+    validate_no_duplicates(value)
+    validate_no_duplicates(reference)
+
+    if set(value).issubset(set(reference)):
+        return [c for c in reference if c in value]
+    return list(value)
 
 
 def find_duplicates(values: Iterable) -> List:

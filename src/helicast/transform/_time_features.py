@@ -4,7 +4,7 @@ from typing import Literal, Optional, Union
 import holidays
 import pandas as pd
 
-from helicast.base import BaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
 from helicast.logging import configure_logging
 from helicast.utils import link_docs_to_class
 
@@ -63,7 +63,7 @@ def _create_sweden_public_holiday_map(
 
 
 @dataclass
-class HourColumnAdder(StatelessTransformerMixin, BaseEstimator):
+class HourColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
@@ -85,7 +85,7 @@ def add_hour_column(
 
 
 @dataclass
-class DayOfWeekColumnAdder(StatelessTransformerMixin, BaseEstimator):
+class DayOfWeekColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
@@ -107,7 +107,7 @@ def add_day_of_week_column(
 
 
 @dataclass
-class DayOfYearColumnAdder(StatelessTransformerMixin, BaseEstimator):
+class DayOfYearColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
     timestamp_column: Optional[str] = None
 
     def _transform(
@@ -129,7 +129,7 @@ def add_day_of_year_column(
 
 
 @dataclass
-class SwedenPublicHolidayColumnAdder(StatelessTransformerMixin, BaseEstimator):
+class SwedenPublicHolidayColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
     timestamp_column: Optional[str] = None
 
     encoding: Literal["int", "bool", "str"] = "int"
