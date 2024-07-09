@@ -107,7 +107,7 @@ class FutureColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
         new_columns = {}
         for c in X.columns:
             for i in self.shifts:
-                new_columns[f"{c}_lagged_{i}"] = X[c].shift(-i)
+                new_columns[f"{c}_future_{i}"] = X[c].shift(-i)
 
         X_new = pd.concat([X, pd.DataFrame(new_columns)], axis=1)
 
