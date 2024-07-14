@@ -1,5 +1,4 @@
-from helicast.validation._data_validation import *
-#from helicast.validation._pandas import *
+from helicast.validation._pandas_timeseries_validation import *
 from helicast.validation._type_validation import *
 
 __all__ = []
