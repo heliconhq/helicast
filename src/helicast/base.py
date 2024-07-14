@@ -81,6 +81,15 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         else:
             super().__setattr__(name, value)
 
+    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
+        if pydantic.dataclasses.is_pydantic_dataclass(self):
+            return super().__repr__(N_CHAR_MAX)
+        else:
+            class_name = self.__class__.__name__
+            attributes = self.get_params()
+            attributes_str = ", ".join(f"{k}={v}" for k, v in attributes.items())
+            return f"{class_name}({attributes_str})"
+
     ##################
     ### VALIDATION ###
     ##################
@@ -157,7 +166,10 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
     def _get_param_names(cls) -> List[str]:
         """Get parameter names for the estimator. This replace the original sklearn
         implementation to ensure full compatibility with Pydantic dataclasses."""
-        return list(get_param_type_mapping(cls).keys())
+        if pydantic.dataclasses.is_pydantic_dataclass(cls):
+            return list(get_param_type_mapping(cls).keys())
+        else:
+            return super()._get_param_names()
 
     @classmethod
     def _get_param_types(cls) -> Dict[str, type]:
