@@ -1,17 +1,67 @@
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from typing import Annotated, Union
 
 import pandas as pd
-from pydantic.functional_validators import BeforeValidator
+from pydantic.functional_validators import AfterValidator, BeforeValidator
 
 __all__ = [
-    # Annotated types
+    # Annotated types for TIMESTAMP
+    "Timestamp",
+    "TzAwareTimestamp",
+    "TzNaiveTimestamp",
+    # Annotated types for TIMEDELTA
     "Timedelta",
     "PositiveTimedelta",
     "NegativeTimedelta",
     "NonNegativeTimedelta",
     "NonPositiveTimedelta",
 ]
+
+
+#################
+### TIMESTAMP ###
+#################
+
+
+def _validate_timestamp(
+    value: Union[pd.Timestamp, datetime, date, str],
+) -> pd.Timestamp:
+    if isinstance(value, pd.Timestamp):
+        return value
+    elif isinstance(value, (datetime, date, str)):
+        return pd.Timestamp(value)
+    else:
+        ValueError(
+            f"Unsupported type for {value=} ({type(value)=}). "
+            f"Expected pd.Timestamp, datetime, date or str."
+        )
+
+
+def _validate_tz_aware(value: pd.Timestamp) -> pd.Timestamp:
+    if value.tz is None:
+        raise ValueError(f"Timestamp must be timezone aware. Found {value=}.")
+    return value
+
+
+def _validate_tz_naive(value: pd.Timestamp) -> pd.Timestamp:
+    if value.tz is not None:
+        raise ValueError(f"Timestamp must be timezone naive. Found {value=}.")
+    return value
+
+
+#: Annotated type for timestamp. Can be used with Pydantic.
+Timestamp = Annotated[pd.Timestamp, BeforeValidator(_validate_timestamp)]
+
+#: Annotated type for time-zone aware timestamps. Can be used with Pydantic.
+TzAwareTimestamp = Annotated[Timestamp, AfterValidator(_validate_tz_aware)]
+
+#: Annotated type for time-zone aware timestamps. Can be used with Pydantic.
+TzNaiveTimestamp = Annotated[Timestamp, AfterValidator(_validate_tz_naive)]
+
+
+#################
+### TIMEDELTA ###
+#################
 
 
 def _validate_timedelta(value: Union[pd.Timedelta, timedelta, str]) -> pd.Timedelta:
