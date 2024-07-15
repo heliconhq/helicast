@@ -126,6 +126,7 @@ def adjust_series_forecast_timestamps(data: pd.Series) -> pd.Series:
     """Transform a forecast Series results to a Series with timestamps.
 
     .. code-block::
+
         # From this
         Power [kW]_future_900      0.0
         Power [kW]_future_1800     0.0
