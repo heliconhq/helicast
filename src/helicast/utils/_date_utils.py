@@ -8,6 +8,7 @@ from helicast.logging import configure_logging
 
 __all__ = [
     "auto_convert_to_datetime_index",
+    "are_timezones_equivalent",
 ]
 
 configure_logging()
@@ -71,7 +72,7 @@ def auto_convert_to_datetime_index(
         try:
             converted = pd.to_datetime(dates, format=format)
             results[format] = converted
-        except:
+        except Exception:
             continue
 
     if len(results) == 0:
@@ -89,3 +90,11 @@ def auto_convert_to_datetime_index(
     if formats[0][0] == formats[1][0]:
         raise RuntimeError(f"Multiple formats found, {results}")
     return pd.DatetimeIndex(results[formats[0][2]])
+
+
+def are_timezones_equivalent(tz1, tz2) -> bool:
+    """Returns True if two timezones are equivalent, False otherwise."""
+    date_range = pd.to_datetime([f"2020-{i:02d}-15 15:30:00" for i in range(1, 13)])
+    date_range_1 = date_range.tz_localize(tz1).tz_convert("UTC")
+    date_range_2 = date_range.tz_localize(tz2).tz_convert("UTC")
+    return date_range_1.equals(date_range_2)

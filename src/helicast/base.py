@@ -81,6 +81,9 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         else:
             super().__setattr__(name, value)
 
+    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
+        return super().__repr__(N_CHAR_MAX)
+
     ##################
     ### VALIDATION ###
     ##################

@@ -11,12 +11,16 @@
 -e file:.
 annotated-types==0.7.0
     # via pydantic
+cffi==1.16.0
+    # via timezonefinder
 contourpy==1.1.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
 fonttools==4.53.0
     # via matplotlib
+h3==3.7.7
+    # via timezonefinder
 holidays==0.52
     # via helicast
 joblib==1.4.2
@@ -30,14 +34,20 @@ numpy==1.24.4
     # via helicast
     # via matplotlib
     # via pandas
+    # via pyarrow
     # via scikit-learn
     # via scipy
+    # via timezonefinder
 packaging==24.1
     # via matplotlib
 pandas==2.0.3
     # via helicast
 pillow==10.4.0
     # via matplotlib
+pyarrow==16.1.0
+    # via helicast
+pycparser==2.22
+    # via cffi
 pydantic==2.8.0
     # via helicast
 pydantic-core==2.20.0
@@ -54,12 +64,16 @@ scikit-learn==1.5.0
     # via helicast
 scipy==1.10.1
     # via scikit-learn
+setuptools==70.3.0
+    # via timezonefinder
 six==1.16.0
     # via python-dateutil
 strenum==0.4.15
     # via helicast
 threadpoolctl==3.5.0
     # via scikit-learn
+timezonefinder==6.5.2
+    # via helicast
 typing-extensions==4.12.2
     # via pydantic
     # via pydantic-core
