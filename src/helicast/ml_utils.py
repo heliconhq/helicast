@@ -13,7 +13,7 @@ __all__ = [
 @validate_call(config={"arbitrary_types_allowed": True})
 def split_data(
     obj: Union[pd.DataFrame, pd.Series],
-    splits: Tuple[PositiveFloat],
+    splits: Tuple[PositiveFloat, ...],
     copy: bool = True,
 ) -> Union[Tuple[pd.DataFrame], Tuple[pd.Series]]:
     """Splits the data into the given splits, e.g., ``splits=(0.7, 0.15, 0.15)`` will
