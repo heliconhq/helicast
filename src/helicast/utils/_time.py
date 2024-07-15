@@ -1,4 +1,3 @@
-from enum import StrEnum
 from typing import Dict, Union
 
 import numpy as np
@@ -6,6 +5,7 @@ import pandas as pd
 from numpy.typing import NDArray
 from pydantic import validate_call
 from pydantic.dataclasses import dataclass
+from strenum import StrEnum
 from timezonefinder import TimezoneFinder
 
 from helicast.typing import TzAwareTimestamp
@@ -17,18 +17,6 @@ __all__ = [
     "convert_float_seconds_to_timestamp",
 ]
 
-
-#: Conversion factors for different time units. The base unit is nanoseconds.
-TIME_UNIT_CONVERSION_MAPPING: Dict[str, int] = {
-    "ns": int(1),
-    "us": int(1e3),
-    "ms": int(1e6),
-    "s": int(1e9),
-    "m": int(1e9 * 60),
-    "h": int(1e9 * 3600),
-    "D": int(1e9 * 3600 * 24),
-    "W": int(1e9 * 3600 * 24 * 7),
-}
 
 #: This is EPOCH time, a.k.a., pd.Timestamp("1970-01-01", tz="UTC")
 EPOCH_TIMESTAMP: pd.Timestamp = pd.Timestamp.fromtimestamp(0, tz="UTC")
@@ -49,6 +37,19 @@ class TimeUnit(StrEnum):
     HOUR = "h"
     DAY = "D"
     WEEK = "W"
+
+
+#: Conversion factors for different time units. The base unit is nanoseconds.
+TIME_UNIT_CONVERSION_MAPPING: Dict[str, int] = {
+    TimeUnit.NANOSECOND: int(1),
+    TimeUnit.MICROSECOND: int(1e3),
+    TimeUnit.MILLISECOND: int(1e6),
+    TimeUnit.SECOND: int(1e9),
+    TimeUnit.MINUTE: int(1e9 * 60),
+    TimeUnit.HOUR: int(1e9 * 3600),
+    TimeUnit.DAY: int(1e9 * 3600 * 24),
+    TimeUnit.WEEK: int(1e9 * 3600 * 24 * 7),
+}
 
 
 def get_timezone(
