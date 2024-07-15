@@ -39,8 +39,7 @@ class ColumnFilter(StatelessTransformerMixin, HelicastBaseEstimator):
     @abstractmethod
     def _select_columns(self, X: pd.DataFrame) -> List[str]:
         """Abstract method that implements the logic for selecting the columns of a
-        pd.DataFrame. Must be implemented in each child class. Don't worry about
-        reordering the list, it is done in the __call__ method!
+        pd.DataFrame. Must be implemented in each child class.
 
         Args:
             X: Input pd.DataFrame.
