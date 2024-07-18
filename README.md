@@ -7,7 +7,7 @@ For environment management, we use [rye](https://rye.astral.sh/).
 
 ## 1 Installation
 
-### 1.1 Install as a Python library (static)
+### 1.1 Install as a Python library (static library)
 
 You can install `helicast` as a python library in any of your project! The package is still
 in active development, so we recommend that you pin the version when installing. At this
@@ -61,3 +61,8 @@ If you want to develop `helicast`, you can do so quite easily :)
 1. Clone the repo on your local machine `git clone git@gitlab.com:trelltech/data-science/helicast.git`;
 2. Navigate to the downloaded repo `cd helicast`;
 3. Install the environment with rye `rye sync`.
+
+## 2 Documentation
+The documentation can be built using the makefile! Run ``make docs`` to compile the
+documentation and open the documentation in your web browser. If you want to open
+the documentation without re-compiling it, you can use ``make open_docs``.
