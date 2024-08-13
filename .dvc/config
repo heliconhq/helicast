@@ -1,6 +1,0 @@
-[core]
-    autostage = true
-    remote = storage
-['remote "storage"']
-    url = s3://fifty-data-science/kalmar-pv-forecast/dvc/files/md5
-    region = eu-central-1
