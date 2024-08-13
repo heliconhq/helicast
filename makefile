@@ -46,20 +46,16 @@ docs: check
 	rye run sphinx-build -b html source build/html; \
 	if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then \
 	    explorer.exe build/html/index.html; \
-	elif [ "$(shell uname)" = "Darwin" ]; then \
-	    open build/html/index.html; \
-	elif [ "$(shell uname)" = "Linux" ]; then \
-	    xdg-open build/html/index.html; \
-	fi
+	else \
+		open build/html/index.html; \
+	fi	
 
 open_docs: check
 	@if grep -qEi "(Microsoft|WSL)" /proc/version &> /dev/null; then \
 	    explorer.exe docs/build/html/index.html; \
-	elif [ "$(shell uname)" = "Darwin" ]; then \
-	    open docs/build/html/index.html; \
-	elif [ "$(shell uname)" = "Linux" ]; then \
-	    xdg-open docs/build/html/index.html; \
-	fi
+	else \
+		open docs/build/html/index.html; \
+	fi	
 
 help:
 	@echo "Available commands:"
