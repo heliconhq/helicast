@@ -71,7 +71,7 @@ class HelicastWrapper(
     ) -> Self:
         if y is not None:
             y = y.squeeze()
-        return self.estimator.fit(X, y)
+        return self.estimator.fit(X, y, **kwargs)
 
     @check_method(name="transform")
     def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
