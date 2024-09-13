@@ -194,6 +194,16 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         """
         X, y = self._validate_X_y(X, y, mode=EstimatorMode.FIT)
         self._fit(X, y, **kwargs)
+
+        # Try to force a transformation to ensure that the feature names
+        # are stored for invertible transformers
+        try:
+            X_tmp = X.iloc[: min(1, len(X))]
+            y_tmp = None if y is None else y.iloc[: min(1, len(y))]
+            self.transform(X_tmp, y_tmp, **kwargs)
+        except Exception:
+            pass
+
         return self
 
 
