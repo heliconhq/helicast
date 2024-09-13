@@ -198,9 +198,7 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         # Try to force a transformation to ensure that the feature names
         # are stored for invertible transformers
         try:
-            X_tmp = X.iloc[: min(1, len(X))]
-            y_tmp = None if y is None else y.iloc[: min(1, len(y))]
-            self.transform(X_tmp, y_tmp, **kwargs)
+            self.transform(X.iloc[: min(1, len(X))])
         except Exception:
             pass
 
