@@ -1,3 +1,4 @@
+from copy import deepcopy
 from warnings import warn
 
 import numpy as np
@@ -159,3 +160,6 @@ class HelicastWrapper(
             raise AttributeError(
                 f"Wrapped estimator {self.estimator} does not have attribute {name}."
             ) from e
+
+    def __deepcopy__(self, memo):
+        return HelicastWrapper(estimator=deepcopy(self.estimator, memo))

@@ -1,5 +1,7 @@
+from copy import deepcopy
 from typing import Any, List, Tuple
 
+import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline as _SKLPipeline
@@ -132,9 +134,35 @@ class Pipeline(_SKLPipeline):
         Returns:
             Predicted target as pd.DataFrame.
         """
-        return super().predict(X, **predict_params)
+        y_pred = super().predict(X, **predict_params)
+
+        if not isinstance(y_pred, (pd.DataFrame, np.ndarray)):
+            raise TypeError(
+                f"y_pred must be a numpy array or a pd.DataFrame. Found {type(y_pred)}."
+            )
+
+        if isinstance(y_pred, np.ndarray):
+            # Force 2D array
+            if y_pred.ndim == 1:
+                y_pred = y_pred.reshape(-1, 1)
+            y_pred = pd.DataFrame(y_pred, columns=self.target_names_in_, index=X.index)
+
+        if y_pred.columns.tolist() != list(self.target_names_in_):
+            raise ValueError(
+                f"Columns of y_pred do not match target_names_in_. Found "
+                f"{y_pred.columns.tolist()}, expected {self.target_names_in_}."
+            )
+        return y_pred
 
     def __sklearn_clone__(self):
         return Pipeline(
             steps=[(name, clone(estimator)) for name, estimator in self.steps]
+        )
+
+    def __deepcopy__(self, memo):
+        return Pipeline(
+            steps=[
+                (deepcopy(name, memo), deepcopy(estimator, memo))
+                for name, estimator in self.steps
+            ]
         )

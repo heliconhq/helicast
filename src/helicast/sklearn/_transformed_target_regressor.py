@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pandas as pd
 from sklearn.base import clone
 from sklearn.compose import TransformedTargetRegressor as _SKLTransformedTargetRegressor
@@ -118,4 +120,10 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
     def __sklearn_clone__(self):
         return TransformedTargetRegressor(
             regressor=clone(self.regressor), transformer=clone(self.transformer)
+        )
+
+    def __deepcopy__(self, memo):
+        return TransformedTargetRegressor(
+            regressor=deepcopy(self.regressor, memo),
+            transformer=deepcopy(self.transformer, memo),
         )
