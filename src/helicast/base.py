@@ -219,6 +219,10 @@ class TransformerMixin(ABC):
         check_is_fitted(self)
         X = self._validate_X(X, mode=EstimatorMode.TRANSFORM)
         X_tr = self._transform(X)
+
+        if not isinstance(X_tr, pd.DataFrame):
+            raise ValueError(f"Expected a pd.DataFrame but got {type(X_tr)} instead.")
+
         self.feature_names_out_ = X_tr.columns.tolist()
         return X_tr
 
