@@ -114,3 +114,8 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
         self.regressor_.fit(X, y_trans, **fit_params)
 
         return self
+
+    def __sklearn_clone__(self):
+        return TransformedTargetRegressor(
+            regressor=clone(self.regressor), transformer=clone(self.transformer)
+        )

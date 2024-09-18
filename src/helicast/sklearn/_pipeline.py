@@ -1,6 +1,7 @@
 from typing import Any, List, Tuple
 
 import pandas as pd
+from sklearn.base import clone
 from sklearn.pipeline import Pipeline as _SKLPipeline
 from typing_extensions import Self
 
@@ -132,3 +133,8 @@ class Pipeline(_SKLPipeline):
             Predicted target as pd.DataFrame.
         """
         return super().predict(X, **predict_params)
+
+    def __sklearn_clone__(self):
+        return Pipeline(
+            steps=[(name, clone(estimator)) for name, estimator in self.steps]
+        )
