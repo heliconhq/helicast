@@ -1,5 +1,6 @@
+from copy import deepcopy
+
 import pandas as pd
-from sklearn.base import BaseEstimator as _SKLBaseEstimator
 from sklearn.base import clone
 from sklearn.compose import TransformedTargetRegressor as _SKLTransformedTargetRegressor
 from sklearn.pipeline import Pipeline as _SKLPipeline
@@ -8,8 +9,10 @@ from sklearn.utils.metadata_routing import (
     _raise_for_unsupported_routing,
 )
 
+from helicast.base import EstimatorMode, validate_X_y
 from helicast.sklearn._pipeline import Pipeline
-from helicast.sklearn._wrapper import HelicastWrapper
+from helicast.sklearn._wrapper import helicast_auto_wrap
+from helicast.typing import InvertibleTransformerType, PredictorType
 
 __all__ = [
     "TransformedTargetRegressor",
@@ -17,32 +20,47 @@ __all__ = [
 
 
 class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
-    def __init__(self, regressor, transformer):
+    def __init__(
+        self, regressor: PredictorType, transformer: InvertibleTransformerType
+    ):
+        ### Regressor
         if isinstance(regressor, _SKLPipeline):
             regressor = Pipeline(regressor.steps)
-        elif isinstance(regressor, _SKLBaseEstimator):
-            regressor = HelicastWrapper(regressor)
+            if not regressor._can_predict:
+                raise TypeError(
+                    f"Pipeline regressor is not a predictor ({regressor=})."
+                )
+        elif isinstance(regressor, PredictorType):
+            regressor = helicast_auto_wrap(regressor)
         else:
-            raise TypeError(
-                f"regressor must be a scikit-learn estimator, got {regressor}"
-            )
+            raise TypeError(f"regressor must be a predictor, got {regressor}")
 
+        ### Transformer
         if isinstance(transformer, _SKLPipeline):
             transformer = Pipeline(transformer.steps)
-        elif isinstance(transformer, _SKLBaseEstimator):
-            transformer = HelicastWrapper(transformer)
+            if not transformer._can_inverse_transform:
+                raise TypeError(
+                    f"Pipeline transformer is not an invertible transformer "
+                    f"({transformer=})."
+                )
+        elif isinstance(transformer, InvertibleTransformerType):
+            transformer = helicast_auto_wrap(transformer)
         else:
             raise TypeError(
-                f"transformer must be a scikit-learn estimator, got {transformer}"
+                f"transformer must be an invertible transformer, got {transformer}"
             )
 
         super().__init__(regressor=regressor, transformer=transformer)
 
-    def fit(self, X, y, **fit_params):
+        try:
+            self.set_output(transform="pandas")
+        except Exception:
+            pass
+
+    def fit(self, X: pd.DataFrame, y: pd.DataFrame | pd.Series, **fit_params):
         ### HELICAST ###
+        X, y = validate_X_y(self, X, y, mode=EstimatorMode.FIT)
         columns = y.columns.tolist()
-        self.target_names_in_ = columns
-        self.feature_names_in_ = X.columns.tolist()
         index = y.index
         ### HELICAST ###
 
@@ -98,3 +116,18 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
         self.regressor_.fit(X, y_trans, **fit_params)
 
         return self
+
+    def __sklearn_clone__(self):
+        return TransformedTargetRegressor(
+            regressor=clone(self.regressor), transformer=clone(self.transformer)
+        )
+
+    def __deepcopy__(self, memo):
+        new_instance = TransformedTargetRegressor(
+            regressor=deepcopy(self.regressor, memo),
+            transformer=deepcopy(self.transformer, memo),
+        )
+        for k in self.__dict__.keys():
+            if k not in ["regressor", "transformer"]:
+                new_instance.__dict__[k] = deepcopy(self.__dict__[k], memo)
+        return new_instance

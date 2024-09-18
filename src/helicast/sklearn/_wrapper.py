@@ -1,9 +1,8 @@
-from functools import partial, wraps
-from typing import Any, Union
+from copy import deepcopy
+from warnings import warn
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator as _SKLBaseEstimator
 from sklearn.base import clone
 from typing_extensions import Self
 
@@ -13,7 +12,15 @@ from helicast.base import (
     PredictorMixin,
     dataclass,
 )
-from helicast.utils import validate_equal_to_reference
+from helicast.typing import PredictorType, TransformerType
+from helicast.utils import (
+    check_method,
+    is_fitable,
+    is_invertible_transformer,
+    is_predictor,
+    is_transformer,
+    validate_equal_to_reference,
+)
 
 __all__ = [
     "HelicastWrapper",
@@ -21,63 +28,85 @@ __all__ = [
 ]
 
 
-def helicast_auto_wrap(obj):
+def helicast_auto_wrap(
+    obj: HelicastBaseEstimator | TransformerType | PredictorType,
+) -> HelicastBaseEstimator:
     """Automatically wraps an object in a HelicastWrapper if it is not already a
     HelicastBaseEstimator. It accepts sklearn estimators and HelicastBaseEstimators."""
+
     if isinstance(obj, HelicastBaseEstimator):
         return obj
-    elif isinstance(obj, _SKLBaseEstimator):
+    elif isinstance(obj, (TransformerType, PredictorType)):
         return HelicastWrapper(obj)
-    raise ValueError(f"Cannot wrap object of type {type(obj)}")
 
-
-def _has_method(obj, name: str) -> bool:
-    """ "Check if a class has a method with the given name."""
-    if hasattr(obj, name) and callable(getattr(obj, name, None)):
-        return True
-    return False
-
-
-def check_method(method=None, *, name: str):
-    """Ensure that the estimator attribute has a method with the given name ``name``."""
-    if method is None:
-        return partial(check_method, name=name)
-
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        if not _has_method(self.estimator, name):
-            estimator_name = self.estimator.__class__.__name__
-            raise AttributeError(
-                f"Estimator {estimator_name} does not have '{name}' method."
-            )
-        return method(self, *args, **kwargs)
-
-    return wrapper
+    raise ValueError(
+        f"Object {obj} ({type(obj)=}) should implement the fit/transform or fit/predict methods."
+    )
 
 
 @dataclass
 class HelicastWrapper(
     HelicastBaseEstimator, InvertibleTransformerMixin, PredictorMixin
 ):
-    estimator: Any
+    """Wraps a sklearn-like estimator in a HelicastWrapper, such that the estimator
+    behaves like a HelicastBaseEstimator (with DataFrame input/output).
+
+    Args:
+        estimator: Estimator-like object that should implement the fit/transform or
+            fit/predict methods.
+    """
+
+    estimator: TransformerType | PredictorType
 
     def __post_init__(self):
-        if hasattr(self.estimator, "set_output"):
-            self.estimator.set_output(transform="pandas")
+        if isinstance(self.estimator, HelicastWrapper):
+            warn(
+                "You're wrapping a HelicastWrapper in a HelicastWrapper, this is not "
+                "recommended. The estimator of the inner HelicastWrapper will be "
+                "exposed to the outer HelicastWrapper, avoiding the double wrapping."
+            )
+            self.estimator = self.estimator.estimator
 
-    @check_method(name="fit")
+        try:
+            self.estimator.set_output(transform="pandas")
+        except Exception:
+            pass
+
+    ##################
+    ### PROPERTIES ###
+    ##################
+    @property
+    def _can_fit(self) -> bool:
+        return is_fitable(self.estimator)
+
+    @property
+    def _can_transform(self) -> bool:
+        return is_transformer(self.estimator)
+
+    @property
+    def _can_inverse_transform(self) -> bool:
+        return is_invertible_transformer(self.estimator)
+
+    @property
+    def _can_predict(self) -> bool:
+        return is_predictor(self.estimator)
+
+    #####################
+    ### SKLEARN LOGIC ###
+    #####################
+    @check_method(check=is_fitable)
     def _fit(
-        self, X: pd.DataFrame, y: Union[pd.DataFrame, pd.Series, None], **kwargs
+        self, X: pd.DataFrame, y: pd.DataFrame | pd.Series | None, **kwargs
     ) -> Self:
         if y is not None:
             y = y.squeeze()
         return self.estimator.fit(X, y, **kwargs)
 
-    @check_method(name="transform")
+    @check_method(check=is_transformer)
     def _transform(self, X: pd.DataFrame) -> pd.DataFrame:
         return self.estimator.transform(X)
 
-    @check_method(name="inverse_transform")
+    @check_method(check=is_invertible_transformer)
     def _inverse_transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_inv_tr = self.estimator.inverse_transform(X)
 
@@ -98,21 +127,21 @@ class HelicastWrapper(
             X_inv_tr = X_inv_tr[columns]
         return X_inv_tr
 
-    @check_method(name="predict")
+    @check_method(check=is_predictor)
     def _predict(self, X: pd.DataFrame) -> pd.DataFrame:
         y_pred = self.estimator.predict(X)
+
+        if not isinstance(y_pred, (np.ndarray, pd.DataFrame)):
+            raise TypeError(
+                f"y_pred must be a numpy array or a pd.DataFrame. Found {type(y_pred)}."
+            )
 
         if isinstance(y_pred, np.ndarray):
             # Force 2D array
             if y_pred.ndim == 1:
                 y_pred = y_pred.reshape(-1, 1)
             y_pred = pd.DataFrame(y_pred, columns=self.target_names_in_, index=X.index)
-        elif isinstance(y_pred, pd.DataFrame):
-            pass
-        else:
-            raise TypeError(
-                f"y_pred must be a numpy array or a pd.DataFrame. Found {type(y_pred)}."
-            )
+
         return y_pred
 
     def get_params(self, deep: bool = True) -> dict:
@@ -123,3 +152,18 @@ class HelicastWrapper(
 
     def __sklearn_clone__(self):
         return HelicastWrapper(estimator=clone(self.estimator))
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.estimator, name)
+        except AttributeError as e:
+            raise AttributeError(
+                f"Wrapped estimator {self.estimator} does not have attribute {name}."
+            ) from e
+
+    def __deepcopy__(self, memo):
+        new_instance = HelicastWrapper(estimator=deepcopy(self.estimator, memo))
+        for k in self.__dict__.keys():
+            if k not in ["estimator"]:
+                new_instance.__dict__[k] = deepcopy(self.__dict__[k], memo)
+        return new_instance

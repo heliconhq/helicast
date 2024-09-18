@@ -1,3 +1,4 @@
+from helicast.typing._protocols import *
 from helicast.typing._singletons import *
 from helicast.typing._time import *
 from helicast.typing._timeseries_dataframe import *

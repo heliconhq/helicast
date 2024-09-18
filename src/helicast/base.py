@@ -16,6 +16,10 @@ from helicast.utils import get_param_type_mapping, validate_equal_to_reference
 
 __all__ = [
     "dataclass",
+    "EstimatorMode",
+    "validate_X",
+    "validate_y",
+    "validate_X_y",
     "HelicastBaseEstimator",
     "TransformerMixin",
     "StatelessTransformerMixin",
@@ -55,6 +59,78 @@ class EstimatorMode(StrEnum):
     PREDICT = auto()
 
 
+@validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
+def validate_X(obj: object, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
+    # If fitting, store the feature names and return the input data
+    if mode == EstimatorMode.FIT:
+        obj.feature_names_in_ = X.columns.tolist()
+        return X
+
+    # If transforming or predicting, validate the input data
+    if mode == EstimatorMode.TRANSFORM or mode == EstimatorMode.PREDICT:
+        features = obj.feature_names_in_
+    elif mode == EstimatorMode.INVERSE_TRANSFORM:
+        features = obj.feature_names_out_
+    else:
+        raise RuntimeError(f"Unexpected mode: {mode=}")
+
+    columns = validate_equal_to_reference(X.columns, features, reorder=True)
+    return X[columns]
+
+
+@validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
+def validate_y(
+    obj: object, y: Union[pd.DataFrame, pd.Series, None], *, mode: EstimatorMode
+) -> Union[pd.DataFrame, None]:
+    if y is None:
+        return None
+    elif mode == EstimatorMode.FIT:
+        if isinstance(y, pd.Series) and y.name is None:
+            raise ValueError(
+                "y is a pd.Series with a None name. The name must be defined!"
+            )
+        if isinstance(y, pd.Series):
+            y = y.to_frame(name=y.name)
+        obj.target_names_in_ = y.columns.tolist()
+    elif mode == EstimatorMode.PREDICT:
+        if isinstance(y, pd.Series):
+            if len(obj.target_names_in_) != 1:
+                raise ValueError(
+                    f"{len(obj.target_names_in_)=} is not 1 but we got y as a pd.Series."
+                )
+            y = y.to_frame(name=obj.target_names_in_[0])
+        columns = validate_equal_to_reference(
+            y.columns, obj.target_names_in_, reorder=True
+        )
+        y = y[columns]
+    else:
+        raise RuntimeError(f"Validating y in {mode=}. This is unexpected!")
+    return y
+
+
+def validate_X_y(
+    obj: object,
+    X: pd.DataFrame,
+    y: Union[pd.DataFrame, pd.Series, None] = None,
+    *,
+    mode: EstimatorMode,
+) -> Tuple[pd.DataFrame, Union[pd.DataFrame, None]]:
+    X = validate_X(obj, X, mode=mode)
+    y = validate_y(obj, y, mode=mode)
+
+    if mode == EstimatorMode.FIT and y is not None:
+        if len(X) != len(y):
+            raise ValueError(
+                f"X and y must have the same length. Found {len(X)=} and {len(y)=}."
+            )
+        if not X.index.equals(y.index):
+            raise ValueError(
+                "Found different indices for X and y! They should be the same."
+            )
+
+    return X, y
+
+
 @dataclass
 class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
     """Base class for all estimators in Helicast. It is a Pydantic dataclass that
@@ -88,52 +164,13 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
     ### VALIDATION ###
     ##################
 
-    @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def _validate_X(self, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
-        # If fitting, store the feature names and return the input data
-        if mode == EstimatorMode.FIT:
-            self.feature_names_in_ = X.columns.tolist()
-            return X
+        return validate_X(self, X, mode=mode)
 
-        # If transforming or predicting, validate the input data
-        if mode == EstimatorMode.TRANSFORM or mode == EstimatorMode.PREDICT:
-            features = self.feature_names_in_
-        elif mode == EstimatorMode.INVERSE_TRANSFORM:
-            features = self.feature_names_out_
-        else:
-            raise RuntimeError(f"Unexpected mode: {mode=}")
-
-        columns = validate_equal_to_reference(X.columns, features, reorder=True)
-        return X[columns]
-
-    @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def _validate_y(
         self, y: Union[pd.DataFrame, pd.Series, None], *, mode: EstimatorMode
     ) -> Union[pd.DataFrame, None]:
-        if y is None:
-            return None
-        elif mode == EstimatorMode.FIT:
-            if isinstance(y, pd.Series) and y.name is None:
-                raise ValueError(
-                    "y is a pd.Series with a None name. The name must be defined!"
-                )
-            if isinstance(y, pd.Series):
-                y = y.to_frame(name=y.name)
-            self.target_names_in_ = y.columns.tolist()
-        elif mode == EstimatorMode.PREDICT:
-            if isinstance(y, pd.Series):
-                if len(self.target_names_in_) != 1:
-                    raise ValueError(
-                        f"{len(self.target_names_in_)=} is not 1 but we got y as a pd.Series."
-                    )
-                y = y.to_frame(name=self.target_names_in_[0])
-            columns = validate_equal_to_reference(
-                y.columns, self.target_names_in_, reorder=True
-            )
-            y = y[columns]
-        else:
-            raise RuntimeError(f"Validating y in {mode=}. This is unexpected!")
-        return y
+        return validate_y(self, y, mode=mode)
 
     def _validate_X_y(
         self,
@@ -142,15 +179,7 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         *,
         mode: EstimatorMode,
     ) -> Tuple[pd.DataFrame, Union[pd.DataFrame, None]]:
-        X = self._validate_X(X, mode=mode)
-        y = self._validate_y(y, mode=mode)
-
-        if mode == EstimatorMode.FIT and y is not None and len(X) != len(y):
-            raise ValueError(
-                f"X and y must have the same length. Found {len(X)=} and {len(y)=}."
-            )
-
-        return X, y
+        return validate_X_y(self, X, y, mode=mode)
 
     ###################
     ### SKLEARN API ###
@@ -219,6 +248,10 @@ class TransformerMixin(ABC):
         check_is_fitted(self)
         X = self._validate_X(X, mode=EstimatorMode.TRANSFORM)
         X_tr = self._transform(X)
+
+        if not isinstance(X_tr, pd.DataFrame):
+            raise ValueError(f"Expected a pd.DataFrame but got {type(X_tr)} instead.")
+
         self.feature_names_out_ = X_tr.columns.tolist()
         return X_tr
 
