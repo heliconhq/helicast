@@ -123,7 +123,11 @@ class TransformedTargetRegressor(_SKLTransformedTargetRegressor):
         )
 
     def __deepcopy__(self, memo):
-        return TransformedTargetRegressor(
+        new_instance = TransformedTargetRegressor(
             regressor=deepcopy(self.regressor, memo),
             transformer=deepcopy(self.transformer, memo),
         )
+        for k in self.__dict__.keys():
+            if k not in ["regressor", "transformer"]:
+                new_instance.__dict__[k] = deepcopy(self.__dict__[k], memo)
+        return new_instance

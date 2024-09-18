@@ -162,4 +162,8 @@ class HelicastWrapper(
             ) from e
 
     def __deepcopy__(self, memo):
-        return HelicastWrapper(estimator=deepcopy(self.estimator, memo))
+        new_instance = HelicastWrapper(estimator=deepcopy(self.estimator, memo))
+        for k in self.__dict__.keys():
+            if k not in ["estimator"]:
+                new_instance.__dict__[k] = deepcopy(self.__dict__[k], memo)
+        return new_instance

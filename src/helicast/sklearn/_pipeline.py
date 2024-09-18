@@ -160,9 +160,13 @@ class Pipeline(_SKLPipeline):
         )
 
     def __deepcopy__(self, memo):
-        return Pipeline(
+        new_instance = Pipeline(
             steps=[
                 (deepcopy(name, memo), deepcopy(estimator, memo))
                 for name, estimator in self.steps
             ]
         )
+        for k in self.__dict__.keys():
+            if k not in ["steps"]:
+                new_instance.__dict__[k] = deepcopy(self.__dict__[k], memo)
+        return new_instance
