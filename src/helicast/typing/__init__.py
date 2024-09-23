@@ -1,3 +1,4 @@
+from helicast.typing._enums import *
 from helicast.typing._protocols import *
 from helicast.typing._singletons import *
 from helicast.typing._time import *
