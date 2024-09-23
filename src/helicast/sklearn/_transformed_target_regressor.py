@@ -9,10 +9,10 @@ from sklearn.utils.metadata_routing import (
     _raise_for_unsupported_routing,
 )
 
-from helicast.base import EstimatorMode, validate_X_y
+from helicast.base import validate_X_y
 from helicast.sklearn._pipeline import Pipeline
 from helicast.sklearn._wrapper import helicast_auto_wrap
-from helicast.typing import InvertibleTransformerType, PredictorType
+from helicast.typing import EstimatorMode, InvertibleTransformerType, PredictorType
 
 __all__ = [
     "TransformedTargetRegressor",
