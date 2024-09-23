@@ -32,6 +32,14 @@ def _series_to_dataframe(y: pd.Series) -> pd.DataFrame:
     return y.to_frame(name=y.name)
 
 
+def _validate_columns_labels(df: pd.DataFrame) -> pd.DataFrame:
+    """Validate that the labels of the columns are strings."""
+    wrong_labels = [(c, type(c)) for c in df.columns if not isinstance(c, str)]
+    if wrong_labels:
+        raise ValueError(f"Columns labels must be strings. Found {wrong_labels=}.")
+    return df
+
+
 @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
 def validate_y(
     obj: object, y: pd.DataFrame | pd.Series | None, *, mode: EstimatorMode
@@ -59,6 +67,7 @@ def validate_y(
 
 @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
 def validate_X(obj: object, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
+    X = _validate_columns_labels(X)
     # If fitting, store the feature names and return the input data
     if mode == EstimatorMode.FIT:
         obj.feature_names_in_ = X.columns.tolist()
