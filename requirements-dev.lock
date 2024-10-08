@@ -66,6 +66,8 @@ decorator==5.1.1
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
+deprecated==1.2.14
+    # via helicast
 docutils==0.20.1
     # via nbsphinx
     # via pydata-sphinx-theme
@@ -246,6 +248,7 @@ platformdirs==4.2.2
     # via jupyter-core
 pluggy==1.5.0
     # via pytest
+polars==1.7.1
 prometheus-client==0.20.0
     # via jupyter-server
 prompt-toolkit==3.0.47
@@ -427,3 +430,5 @@ websocket-client==1.8.0
     # via jupyter-server
 widgetsnbextension==4.0.11
     # via ipywidgets
+wrapt==1.16.0
+    # via deprecated
