@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
+from sklearn.base import check_is_fitted, clone
 from typing_extensions import Self
 
 from helicast.base import (
@@ -71,6 +71,10 @@ class HelicastWrapper(
             self.estimator.set_output(transform="pandas")
         except Exception:
             pass
+
+    def __sklearn_is_fitted__(self):
+        check_is_fitted(self.estimator)
+        return True
 
     ##################
     ### PROPERTIES ###
