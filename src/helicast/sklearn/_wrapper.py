@@ -11,6 +11,7 @@ from helicast.base import (
     InvertibleTransformerMixin,
     PredictorMixin,
     dataclass,
+    is_stateless,
 )
 from helicast.typing import PredictorType, TransformerType
 from helicast.utils import (
@@ -75,6 +76,9 @@ class HelicastWrapper(
     def __sklearn_is_fitted__(self):
         check_is_fitted(self.estimator)
         return True
+
+    def __helicast_is_stateless__(self):
+        return is_stateless(self.estimator)
 
     ##################
     ### PROPERTIES ###
