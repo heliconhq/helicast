@@ -6,7 +6,11 @@ import pandas as pd
 from pydantic import validate_call
 from typing_extensions import Self
 
-from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import (
+    StatelessEstimator,
+    TransformerMixin,
+    dataclass,
+)
 from helicast.logging import configure_logging
 from helicast.utils import maybe_reorder_like
 
@@ -30,7 +34,7 @@ def _cast_type_to_list(_type) -> Callable[[Any], Any]:
 
 
 @dataclass
-class ColumnFilter(StatelessTransformerMixin, HelicastBaseEstimator):
+class ColumnFilter(TransformerMixin, StatelessEstimator):
     """Abstract base class for DataFrame columns filtering. Child classes need to
     implement the ``_select_columns`` method which takes a pd.DataFrame in and outputs
     a list of columns which are to be selected.

@@ -40,6 +40,7 @@ class DTypeBase(ColumnFilter):
         return False
 
 
+@dataclass
 class DTypeSelector(DTypeBase):
     """ColumnFilter implementing a dtype selection rule.
 
@@ -64,6 +65,7 @@ def select_columns_by_dtype(
     return DTypeSelector(dtypes=dtypes).fit_transform(X)
 
 
+@dataclass
 class DTypeRemover(DTypeBase):
     """ColumnFilter implementing a dtype exclusion rule.
 

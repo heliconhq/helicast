@@ -1,68 +1,42 @@
 # Helicast
 
+Welcome to the Helicast repo! 
+
+Helicast is a library that aims at facilitating data science and machine learning 
+workflows for the data science team at [Helicon](https://helicon.ai/). The library is 
+in active development.
 
 
-For environment management, we use [rye](https://rye.astral.sh/).
+The documentation can be built using the makefile! Run ``make docs`` to compile the
+documentation and open the documentation in your web browser. If you want to open
+the documentation without re-compiling it, you can use ``make open_docs``.
+
+> [!NOTE]  
+> The repo has been moved to github recently. We will host the documentation with 
+> readthedocs or github pages. Stay tuned =) 
 
 
-## 1 Installation
-
-### 1.1 Install as a Python library (static library)
-
-You can install `helicast` as a python library in any of your project! The package is still
-in active development, so we recommend that you pin the version when installing. At this
-stage, the package is in a private repo, which means that you should have access to 
-GitLab via SSH for the following to work.
-
-To install the package, you can use
+## 1. Installation
+You can install the library using pip
 ```bash
-pip install git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@XYZ
+pip install git+https://github.com/heliconhq/helicast.git@XYZ
 ```
-where `XYZ` is the tag, branch name or commit hash. If you omit `@XYZ`, it will install
-the main branch (we do not recommend doing that).
+where ``XYZ`` can be a commit hash, a branch name or a tag. We recommend using tags
+as they refer to immutable snapshots of the library.
 
-If you want to add the dependency in your pyproject.toml file, you can add like this
+You can also include the library in your dependencies, e.g., in your ``pyproject.toml``
+file,
 ```toml
 [project]
 # ...
 dependencies = [
     # ...
-    "helicast @ git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@v0.1.1",
+    "helicast @ git+https://github.com/heliconhq/helicast.git@XYZ",
     #...
 ]
 ```
-replace `v0.1.1` by the version you want. The equivalent rye command is
-```bash
-rye add 'helicast@git+ssh://git@gitlab.com/trelltech/data-science/helicast.git@v0.1.1' --verbose
-```
-
-### 1.2 Install as a Python library (editable)
-(Not recommended!)
 
 
-If you want to install the `helicast` python library for your project but still have
-access to the latest change quickly, you can install it using [pip editable install](https://setuptools.pypa.io/en/latest/userguide/development_mode.html). The work flow will look like the following:
-
-1. Clone the `helicast` repository somewhere in you computer, e.g.,
-`git clone git@gitlab.com:trelltech/data-science/helicast.git ..`
-2. Navigate to the helicast repo you just cloned, e.g., `cd ../helicast`
-3. Activate your project environment, e.g., `conda activate myproject`
-3. Install `helicast` in editable mode, `pip install -e .`
-
-With this setup, the `helicast` library installed in your conda environment `myproject`
-will reflect the state of the repo on your local filesystem! For instance, if you change
-branch, using `helicast` in your project will reflect the state of `helicast` in that
-specific branch! This set up will make your project less reproducible. 
-
-
-### 1.3 Install the `helicast` development environment
-
-If you want to develop `helicast`, you can do so quite easily :) 
-1. Clone the repo on your local machine `git clone git@gitlab.com:trelltech/data-science/helicast.git`;
-2. Navigate to the downloaded repo `cd helicast`;
-3. Install the environment with rye `rye sync`.
-
-## 2 Documentation
-The documentation can be built using the makefile! Run ``make docs`` to compile the
-documentation and open the documentation in your web browser. If you want to open
-the documentation without re-compiling it, you can use ``make open_docs``.
+## 2. Development
+We're using [rye](https://rye.astral.sh/) for environment management. You can clone/fork
+the repo and then run ``rye sync``.

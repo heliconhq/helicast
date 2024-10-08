@@ -17,6 +17,8 @@ contourpy==1.1.1
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
+deprecated==1.2.14
+    # via helicast
 fonttools==4.53.0
     # via matplotlib
 h3==3.7.7
@@ -79,3 +81,5 @@ typing-extensions==4.12.2
     # via pydantic-core
 tzdata==2024.1
     # via pandas
+wrapt==1.16.0
+    # via deprecated

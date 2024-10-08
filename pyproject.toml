@@ -28,6 +28,7 @@ dependencies = [
     "holidays>=0.52",
     "pyarrow>=10.1.0",
     "timezonefinder>=6.5.2",
+    "Deprecated>=1.0.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.10"
@@ -46,6 +47,7 @@ dev-dependencies = [
     "ipython>=8.12.0",
     "autodoc-pydantic>=2.2.0",
     "coverage>=7.5.4",
+    "polars>=1.7.1",
 ]
 
 [tool.ruff.lint]
@@ -53,6 +55,7 @@ ignore = ["F403"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["./src"]
+forced-separate = ["helicast"]
 
 [tool.ruff.format]
 # Enable auto-formatting of code examples in docstrings. Markdown,
