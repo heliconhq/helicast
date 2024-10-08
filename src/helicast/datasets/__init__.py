@@ -1,3 +1,4 @@
+from helicast.datasets._dataframe import *
 from helicast.datasets._regression import *
 
 __all__ = []
