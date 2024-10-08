@@ -94,7 +94,7 @@ def validate_X(obj: object, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataF
             raise RuntimeError(f"Unexpected mode: {mode=}")
 
     # Set ``_disable_X_column_check = True`` to disable this check
-    if getattr(obj, "_disable_X_column_check", False) is False:
+    if getattr(obj, "_disable_X_column_subset_filtering", False) is False:
         validate_subset_of_reference(columns, X.columns)
         return X[columns]
     else:
