@@ -1,4 +1,5 @@
 from helicast.base._base import *
+from helicast.base._dataclass import *
 from helicast.base._predictor import *
 from helicast.base._transformer import *
 
