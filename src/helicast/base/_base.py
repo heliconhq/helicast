@@ -1,135 +1,123 @@
 from abc import ABC, abstractmethod
-from functools import cached_property, partial
+from functools import cached_property
 from typing import Any
 from warnings import warn
 
+import numpy as np
 import pandas as pd
-import pydantic.dataclasses
 from pydantic import validate_call
+from pydantic.dataclasses import is_pydantic_dataclass
 from sklearn.base import BaseEstimator as _SKLearnBaseEstimator
-from typing_extensions import Self, dataclass_transform
+from typing_extensions import Self
 
 from helicast._version import __version__
+from helicast.base._dataclass import dataclass
 from helicast.typing import EstimatorMode
-from helicast.utils import get_param_type_mapping, validate_equal_to_reference
+from helicast.utils import (
+    get_param_type_mapping,
+    numpy_array_to_dataframe,
+    series_to_dataframe,
+    validate_column_names_as_string,
+    validate_equal_to_reference,
+    validate_subset_of_reference,
+)
 
 __all__ = [
-    "dataclass",
     "HelicastBaseEstimator",
+    "StatelessEstimator",
     "validate_X",
     "validate_X_y",
     "validate_y",
+    "is_stateless",
 ]
-
-
-def _series_to_dataframe(y: pd.Series) -> pd.DataFrame:
-    """Convert a Series to a DataFrame. The Series must have a name that is a string."""
-    if not isinstance(y.name, str):
-        raise ValueError(
-            f"pd.Series y should have a proper name (a string). "
-            f"Found {y.name=} (type={type(y.name)})."
-        )
-    return y.to_frame(name=y.name)
-
-
-def _validate_columns_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """Validate that the labels of the columns are strings."""
-    wrong_labels = [(c, type(c)) for c in df.columns if not isinstance(c, str)]
-    if wrong_labels:
-        raise ValueError(f"Columns labels must be strings. Found {wrong_labels=}.")
-    return df
 
 
 @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
 def validate_y(
-    obj: object, y: pd.DataFrame | pd.Series | None, *, mode: EstimatorMode
+    obj: object,
+    y: pd.DataFrame | pd.Series | np.ndarray | None,
+    *,
+    mode: EstimatorMode,
+    index: pd.Index | None = None,
 ) -> pd.DataFrame | None:
     if y is None:
         return None
-    elif mode == EstimatorMode.FIT:
-        if isinstance(y, pd.Series):
-            y = _series_to_dataframe(y)
-        obj.target_names_in_ = y.columns.tolist()
-    elif mode == EstimatorMode.PREDICT:
-        if isinstance(y, pd.Series):
-            n_targets = len(obj.target_names_in_)
-            if n_targets != 1:
-                raise ValueError(f"{n_targets=} is not 1 but we got y as a pd.Series.")
-            y = y.to_frame(name=obj.target_names_in_[0])
-        columns = validate_equal_to_reference(
-            y.columns, obj.target_names_in_, reorder=True
-        )
-        y = y[columns]
-    else:
-        raise RuntimeError(f"Validating y in {mode=}. This is unexpected!")
-    return y
+
+    match mode:
+        case EstimatorMode.FIT:
+            if isinstance(y, pd.Series):
+                y = series_to_dataframe(y)
+            obj.target_names_in_ = y.columns.tolist()
+            return y
+
+        case EstimatorMode.PREDICT:
+            if isinstance(y, np.ndarray):
+                if index is None:
+                    raise ValueError("y is a np.ndarray, the index cannot be None!")
+                y = numpy_array_to_dataframe(y, obj.target_names_in_, index)
+            elif isinstance(y, pd.Series):
+                if len(obj.target_names_in_) != 1:
+                    raise ValueError(
+                        f"{obj.target_names_in_=} has more than 1 element but we "
+                        f"got y as a pd.Series in predict mode."
+                    )
+                y = series_to_dataframe(y, name=obj.target_names_in_[0])
+
+        case _:
+            raise RuntimeError(f"Validating y in {mode=}. This is unexpected!")
+
+    columns = validate_equal_to_reference(y.columns, obj.target_names_in_, reorder=True)
+    return y[columns]
 
 
 @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
 def validate_X(obj: object, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
-    X = _validate_columns_labels(X)
-    # If fitting, store the feature names and return the input data
-    if mode == EstimatorMode.FIT:
+    X = validate_column_names_as_string(X)
+
+    # Stateless classes do not require the full column names validation
+    if is_stateless(obj):
         obj.feature_names_in_ = X.columns.tolist()
         return X
 
-    # If transforming or predicting, validate the input data
-    if mode == EstimatorMode.TRANSFORM or mode == EstimatorMode.PREDICT:
-        features = obj.feature_names_in_
-    elif mode == EstimatorMode.INVERSE_TRANSFORM:
-        features = obj.feature_names_out_
-    else:
-        raise RuntimeError(f"Unexpected mode: {mode=}")
+    match mode:
+        case EstimatorMode.FIT:
+            obj.feature_names_in_ = X.columns.tolist()
+            return X
 
-    columns = X.columns
-    # Set ``_disable_X_column_check = True`` in child class to disable this check
+        case EstimatorMode.TRANSFORM | EstimatorMode.PREDICT:
+            columns = list(obj.feature_names_in_)
+
+        case EstimatorMode.INVERSE_TRANSFORM:
+            columns = list(obj.feature_names_out_)
+
+        case _:
+            raise RuntimeError(f"Unexpected mode: {mode=}")
+
+    # Set ``_disable_X_column_check = True`` to disable this check
     if getattr(obj, "_disable_X_column_check", False) is False:
-        columns = validate_equal_to_reference(X.columns, features, reorder=True)
-
-    return X[columns]
+        validate_subset_of_reference(columns, X.columns)
+        return X[columns]
+    else:
+        return X
 
 
 def validate_X_y(
     obj: object,
     X: pd.DataFrame,
-    y: pd.DataFrame | pd.Series | None = None,
+    y: pd.DataFrame | pd.Series | np.ndarray | None = None,
+    index: pd.Index | None = None,
     *,
     mode: EstimatorMode,
 ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
     X = validate_X(obj, X, mode=mode)
-    y = validate_y(obj, y, mode=mode)
+    y = validate_y(obj, y, mode=mode, index=index)
 
     if mode == EstimatorMode.FIT and y is not None:
         if len(X) != len(y):
             raise ValueError(
                 f"X and y must have the same length. Found {len(X)=} and {len(y)=}."
             )
-        if not X.index.equals(y.index):
-            raise ValueError("X and y must have the same index!")
-
     return X, y
-
-
-@dataclass_transform()
-def dataclass(cls=None, *, config=None):
-    """Dataclass decorator for the Helicast library. It uses Pydantic under the hood,
-    with minimal checks to ensure that nothing breaks. The main difference with the
-    Pydantic dataclass is that the default config is set to allow arbitrary types.
-    Also, the 'validate_assignment' cannot be set to True in the config (otherwise it
-    would break on-the-fly assignements).
-    """
-    if cls is None:
-        return partial(dataclass, config=config)
-
-    if config is None:
-        config = {"arbitrary_types_allowed": True}
-
-    if config.get("validate_assignment", False) is True:
-        raise RuntimeError(
-            "Do not use 'validate_assignment=True' in the Pydantic config in child classes!"
-        )
-
-    return pydantic.dataclasses.dataclass(_cls=cls, config=config)
 
 
 @dataclass
@@ -159,36 +147,21 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
             object.__setattr__(self, name, value)
             # super().__setattr__(name, value)
 
-    ##################
-    ### VALIDATION ###
-    ##################
-
-    def _validate_X(self, X: pd.DataFrame, *, mode: EstimatorMode) -> pd.DataFrame:
-        return validate_X(self, X, mode=mode)
-
-    def _validate_y(
-        self, y: pd.DataFrame | pd.Series | None, *, mode: EstimatorMode
-    ) -> pd.DataFrame | None:
-        return validate_y(self, y, mode=mode)
-
-    def _validate_X_y(
-        self,
-        X: pd.DataFrame,
-        y: pd.DataFrame | pd.Series | None = None,
-        *,
-        mode: EstimatorMode,
-    ) -> tuple[pd.DataFrame, pd.DataFrame | None]:
-        return validate_X_y(self, X, y, mode=mode)
-
     ###################
     ### SKLEARN API ###
     ###################
+    def __sklearn_is_fitted__(self) -> bool:
+        name = "feature_names_in_"
+        return hasattr(self, name) and isinstance(getattr(self, name), list)
 
     @classmethod
     def _get_param_names(cls) -> list[str]:
         """Get parameter names for the estimator. This replace the original sklearn
         implementation to ensure full compatibility with Pydantic dataclasses."""
-        return list(get_param_type_mapping(cls).keys())
+        if is_pydantic_dataclass(cls):
+            return list(get_param_type_mapping(cls).keys())
+        else:
+            return super()._get_param_names()
 
     @classmethod
     def _get_param_types(cls) -> dict[str, type]:
@@ -218,7 +191,7 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
         Returns:
             The fitted estimator.
         """
-        X, y = self._validate_X_y(X, y, mode=EstimatorMode.FIT)
+        X, y = validate_X_y(self, X=X, y=y, mode=EstimatorMode.FIT)
         self._fit(X, y, **kwargs)
 
         # Transform a sample to get the output feature names for invertible transformers
@@ -255,3 +228,66 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
             )
 
         return super().__setstate__(state)
+
+
+@dataclass
+class StatelessEstimator(HelicastBaseEstimator):
+    def __sklearn_is_fitted__(self) -> bool:
+        return True
+
+    def _fit(self, X: pd.DataFrame, y: pd.DataFrame | None = None, **kwargs) -> Self:
+        # Staless estimator do not require fitting
+        return self
+
+    @validate_call(config={"arbitrary_types_allowed": True})
+    def fit(
+        self, X: pd.DataFrame, y: pd.DataFrame | pd.Series | None = None, **kwargs
+    ) -> Self:
+        """Fit method used to ensure compatibility with the API. This class is
+        stateless so this method does nothing."""
+        return self
+
+
+def _get_class_name(obj: type | object) -> str:
+    try:
+        if isinstance(obj, type):
+            return obj.__name__
+        return obj.__class__.__name__
+    except AttributeError:
+        return str(obj)
+
+
+def is_stateless(obj: type | object) -> bool:
+    """Returns ``True`` if the ``obj`` is an instance of a stateless class or a
+    stateless class, ``False`` otherwise.
+
+    A class is considered stateless if it has a ``__helicast_is_stateless__`` attribute
+    that is either (1) a callable that returns boolean or (2) a boolean, **OR** if the
+    class is a subclass of ``StatelessEstimator``. The attribute
+    ``__helicast_is_stateless__`` is checked first.
+
+    If ``obj`` has a ``__helicast_is_stateless__`` attribute that is neither a boolean
+    nor a callable that returns a boolean, a ``TypeError`` is raised."""
+
+    class_name = _get_class_name(obj)
+
+    if hasattr(obj, "__helicast_is_stateless__"):
+        if callable(obj.__helicast_is_stateless__):
+            if isinstance(obj, type):
+                result = obj.__helicast_is_stateless__(None)
+            else:
+                result = obj.__helicast_is_stateless__()
+        else:
+            result = obj.__helicast_is_stateless__
+
+        if not isinstance(result, bool):
+            raise TypeError(
+                f"Class {class_name}.__helicast_is_stateless__ must either be a bool "
+                f"or a callable that returns a bool. Found {result=} ({type(result)=})."
+            )
+        return result
+
+    if isinstance(obj, type):
+        return issubclass(obj, StatelessEstimator)
+    else:
+        return isinstance(obj, StatelessEstimator)

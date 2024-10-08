@@ -2,17 +2,18 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 import pandas as pd
+from deprecated import deprecated
 from pydantic import validate_call
 from sklearn.base import check_is_fitted
 from typing_extensions import Self
 
+from helicast.base._base import validate_X
 from helicast.typing import EstimatorMode
 
 __all__ = [
     "TransformerMixin",
     "StatelessTransformerMixin",
     "InvertibleTransformerMixin",
-    "is_stateless",
 ]
 
 
@@ -28,7 +29,7 @@ class TransformerMixin(ABC):
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         check_is_fitted(self)
-        X = self._validate_X(X, mode=EstimatorMode.TRANSFORM)
+        X = validate_X(self, X, mode=EstimatorMode.TRANSFORM)
         X_tr = self._transform(X)
         self.feature_names_out_ = X_tr.columns.tolist()
         return X_tr
@@ -51,14 +52,24 @@ class TransformerMixin(ABC):
         return self.transform(X)
 
 
+@deprecated(reason="Use StatelessEstimtor instead!")
 class StatelessTransformerMixin(TransformerMixin):
-    """Mixin class for non-invertible stateless transformers in Helicast.
-    Classes that inherit from this mixin should implement the ``_transform``.
-    The ``_fit`` method has a default implementation that does nothing."""
+    def __sklearn_is_fitted__(self) -> bool:
+        return True
 
-    def _fit(
-        self, X: pd.DataFrame, y: Union[pd.DataFrame, None] = None, **kwargs
+    def __helicast_is_stateless__(self) -> bool:
+        return True
+
+    def _fit(self, X: pd.DataFrame, y: pd.DataFrame | None = None, **kwargs) -> Self:
+        # Staless estimator do not require fitting
+        return self
+
+    @validate_call(config={"arbitrary_types_allowed": True})
+    def fit(
+        self, X: pd.DataFrame, y: pd.DataFrame | pd.Series | None = None, **kwargs
     ) -> Self:
+        """Fit method used to ensure compatibility with the API. This class is
+        stateless so this method does nothing."""
         return self
 
 
@@ -74,16 +85,7 @@ class InvertibleTransformerMixin(TransformerMixin):
     @validate_call(config={"arbitrary_types_allowed": True, "validate_return": True})
     def inverse_transform(self, X: pd.DataFrame) -> pd.DataFrame:
         check_is_fitted(self)
-        X = self._validate_X(X, mode=EstimatorMode.INVERSE_TRANSFORM)
+        X = validate_X(self, X, mode=EstimatorMode.INVERSE_TRANSFORM)
         X_inv_tr = self._inverse_transform(X)
-        X_inv_tr = self._validate_X(X_inv_tr, mode=EstimatorMode.TRANSFORM)
+        X_inv_tr = validate_X(self, X_inv_tr, mode=EstimatorMode.INVERSE_TRANSFORM)
         return X_inv_tr
-
-
-def is_stateless(obj) -> bool:
-    """Returns ``True`` if the object is a stateless transformer, ``False`` otherwise.
-    ``obj`` can be a class or an instance of a class."""
-    if isinstance(obj, type):
-        return issubclass(obj, StatelessTransformerMixin)
-    else:
-        return isinstance(obj, StatelessTransformerMixin)

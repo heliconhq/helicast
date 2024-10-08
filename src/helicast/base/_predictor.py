@@ -6,6 +6,7 @@ from pydantic import validate_call
 from sklearn.base import check_is_fitted
 from sklearn.metrics import r2_score
 
+from helicast.base._base import validate_X, validate_y
 from helicast.typing import EstimatorMode
 
 __all__ = [
@@ -38,22 +39,10 @@ class PredictorMixin(ABC):
             The predicted target values. Shape (n_samples, n_targets).
         """
         check_is_fitted(self)
-        X = self._validate_X(X, mode=EstimatorMode.PREDICT)
+        X = validate_X(self, X=X, mode=EstimatorMode.PREDICT)
 
         y_pred = self._predict(X)
-
-        if not isinstance(y_pred, (np.ndarray, pd.Series, pd.DataFrame)):
-            raise TypeError(
-                f"Unexpected type for y_pred. Expected np.ndarray, pd.Series "
-                f"or pd.DataFrame, got {type(y_pred)}"
-            )
-
-        if isinstance(y_pred, np.ndarray):
-            if y_pred.ndim == 1:
-                y_pred = np.reshape(y_pred, (-1, 1))
-            return pd.DataFrame(y_pred, columns=self.target_names_in_, index=X.index)
-
-        y_pred = self._validate_y(y_pred, mode=EstimatorMode.PREDICT)
+        y_pred = validate_y(self, y=y_pred, mode=EstimatorMode.PREDICT, index=X.index)
         return y_pred
 
     def fit_predict(
@@ -80,7 +69,7 @@ class PredictorMixin(ABC):
         y: pd.DataFrame | pd.Series,
         sample_weight: pd.Series | np.ndarray | None = None,
     ) -> float:
-        y = self._validate_y(y, mode=EstimatorMode.PREDICT)
+        y = validate_y(self, y=y, mode=EstimatorMode.PREDICT)
         y_pred = self.predict(X)
         score = r2_score(y, y_pred, sample_weight=sample_weight)
         return float(score)
