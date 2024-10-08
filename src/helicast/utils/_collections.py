@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Iterable, List
+from typing import Iterable
 
 __all__ = [
     "maybe_reorder_like",
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-def maybe_reorder_like(value: Iterable, reference: Iterable) -> List:
+def maybe_reorder_like(value: Iterable, reference: Iterable) -> list:
     """Maybe reorder the elements of ``value`` according to the ordering in
     ``reference``. Reordering happens only if the elements of ``value`` are a subset of
     ``reference``. Both ``value`` and ``reference`` must not contain duplicates.
@@ -32,7 +32,7 @@ def maybe_reorder_like(value: Iterable, reference: Iterable) -> List:
     return list(value)
 
 
-def find_duplicates(values: Iterable) -> List:
+def find_duplicates(values: Iterable) -> list:
     """Find duplicates in an iterable ``values`` and return them as a list. If no
     duplicates are found, an empty list is returned."""
     duplicates = [item for item, count in Counter(values).items() if count > 1]
@@ -53,7 +53,7 @@ def validate_equal_to_reference(
     reference: Iterable,
     reorder: bool = True,
     allow_duplicates: bool = False,
-) -> List:
+) -> list:
     """Validate that two iterables are equal to each other (order does not matter). The
     returned list will have the same order as `reference` if `reorder` is True.
 
@@ -89,7 +89,7 @@ def validate_subset_of_reference(
     reference: Iterable,
     reorder: bool = True,
     allow_duplicates: bool = False,
-) -> List:
+) -> list:
     """Validate that `values` is a subset of `reference`. The returned list will have the
     same order as `reference` if `reorder` is True.
 
@@ -114,9 +114,11 @@ def validate_subset_of_reference(
 
     check_no_extra_elements(values, reference)
 
-    if reorder:
+    if reorder and allow_duplicates:
         ordering = {item: i for i, item in enumerate(reference)}
         return sorted(values, key=lambda x: ordering[x])
+    if reorder and not allow_duplicates:
+        return [item for item in reference if item in values]
     else:
         return list(values)
 

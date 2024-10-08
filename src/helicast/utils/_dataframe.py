@@ -7,6 +7,9 @@ from pydantic import validate_call
 from helicast.utils._collections import maybe_reorder_like
 
 __all__ = [
+    "series_to_dataframe",
+    "validate_column_names_as_string",
+    "numpy_array_to_dataframe",
     "maybe_reorder_columns",
     "find_datetime_index_unique_frequency",
     "find_common_indices",
@@ -15,6 +18,56 @@ __all__ = [
     "iterate_days",
     "adjust_series_forecast_timestamps",
 ]
+
+
+def series_to_dataframe(y: pd.Series, name: str | None = None) -> pd.DataFrame:
+    """Convert a Series to a DataFrame. The Series must have a name that is a string,
+    or ``name`` must be provided,
+    otherwise a ``ValueError`` is raised."""
+
+    if name is None and isinstance(y.name, str):
+        name = y.name
+
+    if name is None:
+        raise ValueError(
+            f"pd.Series y should have a proper name (a string). "
+            f"Found {y.name=} (type={type(y.name)})."
+        )
+
+    return y.to_frame(name)
+
+
+def validate_column_names_as_string(df: pd.DataFrame) -> pd.DataFrame:
+    """Validate that the labels of the columns are strings. If some labels are not
+    strings, a ``ValueError`` is raised."""
+    df.columns = [str(c) if isinstance(c, np.str_) else c for c in df.columns]
+    wrong_labels = [(c, type(c)) for c in df.columns if not isinstance(c, str)]
+    if wrong_labels:
+        raise ValueError(f"Columns labels must be strings. Found {wrong_labels=}.")
+    return df
+
+
+@validate_call(config={"arbitrary_types_allowed": True})
+def numpy_array_to_dataframe(
+    array: np.ndarray, columns: list[str], index: pd.Index
+) -> pd.DataFrame:
+    """Transform a numpy array to a DataFrame. The array must have 1 or 2 dimensions,
+    otherwise a ``ValueError`` is raised.
+
+    Args:
+        array: Input numpy array.
+        columns: List of column names, must have length of ``array.shape[1]``.
+        index: Index of the DataFrame, must have length of ``array.shape[0]``.
+
+    Returns:
+        DataFrame with the array values, with columns and index as specified.
+    """
+    if array.ndim == 1:
+        array = np.reshape(array, (-1, 1))
+    elif array.ndim != 2:
+        raise ValueError(f"Array should have 1 or 2 dimensions. Found {array.ndim=}.")
+
+    return pd.DataFrame(array, columns=columns, index=index)
 
 
 def maybe_reorder_columns(
