@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from functools import cached_property
 from typing import Any
 from warnings import warn
@@ -8,6 +9,7 @@ import pandas as pd
 from pydantic import validate_call
 from pydantic.dataclasses import is_pydantic_dataclass
 from sklearn.base import BaseEstimator as _SKLearnBaseEstimator
+from sklearn.base import clone
 from typing_extensions import Self
 
 from helicast._version import __version__
@@ -153,6 +155,22 @@ class HelicastBaseEstimator(_SKLearnBaseEstimator, ABC):
     def __sklearn_is_fitted__(self) -> bool:
         name = "feature_names_in_"
         return hasattr(self, name) and isinstance(getattr(self, name), list)
+
+    def __sklearn_clone__(self) -> Self:
+        params = {
+            k: clone(v, safe=False) for k, v in self.get_params(deep=False).items()
+        }
+        return self.__class__(**params)
+
+    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> Self:
+        params = {k: deepcopy(v, memo) for k, v in self.get_params(deep=False).items()}
+        obj = self.__class__(**params)
+
+        for k, v in self.__dict__.items():
+            if k not in params.keys():
+                setattr(obj, k, deepcopy(v, memo))
+
+        return obj
 
     @classmethod
     def _get_param_names(cls) -> list[str]:
