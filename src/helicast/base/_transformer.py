@@ -87,5 +87,5 @@ class InvertibleTransformerMixin(TransformerMixin):
         check_is_fitted(self)
         X = validate_X(self, X, mode=EstimatorMode.INVERSE_TRANSFORM)
         X_inv_tr = self._inverse_transform(X)
-        X_inv_tr = validate_X(self, X_inv_tr, mode=EstimatorMode.INVERSE_TRANSFORM)
+        X_inv_tr = validate_X(self, X_inv_tr, mode=EstimatorMode.TRANSFORM)
         return X_inv_tr
