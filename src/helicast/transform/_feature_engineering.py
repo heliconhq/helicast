@@ -4,7 +4,11 @@ from typing import Annotated, Iterable, List, Sequence, Union
 import pandas as pd
 from pydantic import BeforeValidator, Field, PositiveInt, TypeAdapter
 
-from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import (
+    StatelessEstimator,
+    TransformerMixin,
+    dataclass,
+)
 from helicast.logging import configure_logging
 from helicast.utils import link_docs_to_class
 
@@ -37,7 +41,7 @@ def _validate_positive_range(
 
 
 @dataclass
-class LaggedColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class LaggedColumnsAdder(TransformerMixin, StatelessEstimator):
     """Add lagged columns to a DataFrame, that is, columns with values from previous
     rows.
 
@@ -83,7 +87,7 @@ def add_lagged_columns(
 
 
 @dataclass
-class FutureColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class FutureColumnsAdder(TransformerMixin, StatelessEstimator):
     """Add future columns to a DataFrame.
 
     Args:

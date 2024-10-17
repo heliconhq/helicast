@@ -2,17 +2,14 @@ from abc import ABC, abstractmethod
 from typing import Union
 
 import pandas as pd
-from deprecated import deprecated
 from pydantic import validate_call
 from sklearn.base import check_is_fitted
-from typing_extensions import Self
 
 from helicast.base._base import validate_X
 from helicast.typing import EstimatorMode
 
 __all__ = [
     "TransformerMixin",
-    "StatelessTransformerMixin",
     "InvertibleTransformerMixin",
 ]
 
@@ -50,27 +47,6 @@ class TransformerMixin(ABC):
         """
         self.fit(X, y, **kwargs)
         return self.transform(X)
-
-
-@deprecated(reason="Use StatelessEstimtor instead!")
-class StatelessTransformerMixin(TransformerMixin):
-    def __sklearn_is_fitted__(self) -> bool:
-        return True
-
-    def __helicast_is_stateless__(self) -> bool:
-        return True
-
-    def _fit(self, X: pd.DataFrame, y: pd.DataFrame | None = None, **kwargs) -> Self:
-        # Staless estimator do not require fitting
-        return self
-
-    @validate_call(config={"arbitrary_types_allowed": True})
-    def fit(
-        self, X: pd.DataFrame, y: pd.DataFrame | pd.Series | None = None, **kwargs
-    ) -> Self:
-        """Fit method used to ensure compatibility with the API. This class is
-        stateless so this method does nothing."""
-        return self
 
 
 class InvertibleTransformerMixin(TransformerMixin):

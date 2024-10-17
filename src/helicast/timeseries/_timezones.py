@@ -5,7 +5,7 @@ from typing import Any
 
 import pandas as pd
 
-from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import StatelessEstimator, TransformerMixin, dataclass
 from helicast.utils._docs import link_docs_to_class
 
 __all__ = [
@@ -19,7 +19,7 @@ __all__ = [
 
 
 @dataclass
-class TzDatetimeIndexLocalizator(StatelessTransformerMixin, HelicastBaseEstimator):
+class TzDatetimeIndexLocalizator(TransformerMixin, StatelessEstimator):
     """TZ-localize the index of a DataFrame to a specific timezone. The index must be
     a DatetimeIndex that is timezone naive.
 
@@ -51,7 +51,7 @@ def tz_localize_datetime_index(X: pd.DataFrame, tz: Any) -> pd.DataFrame:
 
 
 @dataclass
-class TzDatetimeIndexConverter(StatelessTransformerMixin, HelicastBaseEstimator):
+class TzDatetimeIndexConverter(TransformerMixin, StatelessEstimator):
     """TZ-convert the index of a DataFrame to a specific timezone. The index must be
     a DatetimeIndex that is timezone aware.
 
@@ -83,7 +83,7 @@ def tz_convert_datetime_index(X: pd.DataFrame, tz: Any) -> pd.DataFrame:
 
 
 @dataclass
-class TzDatetimeIndexTransformer(StatelessTransformerMixin, HelicastBaseEstimator):
+class TzDatetimeIndexTransformer(TransformerMixin, StatelessEstimator):
     """Localize or convert the index of a DataFrame to a specific timezone. The index
     must be a DatetimeIndex (both timezone aware and naive are accepted).
 
