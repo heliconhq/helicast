@@ -6,7 +6,7 @@ from typing import Literal, Union
 
 import pandas as pd
 
-from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import StatelessEstimator, TransformerMixin, dataclass
 from helicast.typing._time import Timedelta
 from helicast.utils import are_timezones_equivalent
 from helicast.utils._docs import link_docs_to_class
@@ -22,7 +22,7 @@ __all__ = [
 
 
 @dataclass
-class DatetimeIndexValidator(StatelessTransformerMixin, HelicastBaseEstimator):
+class DatetimeIndexValidator(TransformerMixin, StatelessEstimator):
     """Validate that a DataFrame has a DatetimeIndex as index
 
     Args:
@@ -95,7 +95,7 @@ def validate_datetime_index(
 
 
 @dataclass
-class TzAwareDatetimeIndexValidator(StatelessTransformerMixin, HelicastBaseEstimator):
+class TzAwareDatetimeIndexValidator(TransformerMixin, StatelessEstimator):
     """Validate that a DataFrame has a timezone-aware DatetimeIndex as index"""
 
     tz: Union[Literal["aware"], str] = "aware"
@@ -112,7 +112,7 @@ def validate_tz_aware_datetime_index(
 
 
 @dataclass
-class TzNaiveDatetimeIndexValidator(StatelessTransformerMixin, HelicastBaseEstimator):
+class TzNaiveDatetimeIndexValidator(TransformerMixin, StatelessEstimator):
     """Validate that a DataFrame has a timezone-naive DatetimeIndex as index"""
 
     def _transform(self, X: pd.DataFrame) -> pd.DataFrame:

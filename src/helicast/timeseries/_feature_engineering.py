@@ -4,7 +4,11 @@ import holidays
 import numpy as np
 import pandas as pd
 
-from helicast.base import HelicastBaseEstimator, StatelessTransformerMixin, dataclass
+from helicast.base import (
+    StatelessEstimator,
+    TransformerMixin,
+    dataclass,
+)
 from helicast.transform import FutureColumnsAdder
 from helicast.utils import find_datetime_index_unique_frequency, link_docs_to_class
 
@@ -23,7 +27,7 @@ __all__ = [
 
 
 @dataclass
-class ForecastHorizonColumnsAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class ForecastHorizonColumnsAdder(TransformerMixin, StatelessEstimator):
     """Add columns with future values of the input columns. The columns are
     labeled with the time difference in seconds from the input columns.
 
@@ -121,7 +125,7 @@ def _create_sweden_public_holiday_map(
 
 
 @dataclass
-class HourColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class HourColumnAdder(TransformerMixin, StatelessEstimator):
     """Add a column ``"hour"`` to the DataFrame with the hour of the day. The index
     of the DataFrame is expected to be a pd.DatetimeIndex or a column with datetime
     values must be specified by the ``datetime_column`` argument.
@@ -152,7 +156,7 @@ def add_hour_column(
 
 
 @dataclass
-class DayOfWeekColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class DayOfWeekColumnAdder(TransformerMixin, StatelessEstimator):
     """Add a column ``"day_of_week"`` to the DataFrame with the day of the week as
     integer (0=Monday, 1=Tuesday, ..., 6=Sunday). The index of the DataFrame is expected
     to be a pd.DatetimeIndex or a column with datetime values must be specified by the
@@ -184,7 +188,7 @@ def add_day_of_week_column(
 
 
 @dataclass
-class DayOfYearColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class DayOfYearColumnAdder(TransformerMixin, StatelessEstimator):
     """Add a column ``"day_of_year"`` to the DataFrame with the day of the year as
     integer. The index of the DataFrame is expected to be a pd.DatetimeIndex or a column
     with datetime values must be specified by the ``datetime_column`` argument.
@@ -215,7 +219,7 @@ def add_day_of_year_column(
 
 
 @dataclass
-class SwedenPublicHolidayColumnAdder(StatelessTransformerMixin, HelicastBaseEstimator):
+class SwedenPublicHolidayColumnAdder(TransformerMixin, StatelessEstimator):
     """EXPERIMENTAL! Add a column ``"sweden_public_holiday"`` to the DataFrame with
     information about whether the day is a public holiday in Sweden. The index of the
     DataFrame is expected to be a pd.DatetimeIndex or a column with datetime values must
