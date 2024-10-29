@@ -31,6 +31,7 @@ __all__ = [
     "validate_X_y",
     "validate_y",
     "is_stateless",
+    "is_fitted",
 ]
 
 
@@ -263,6 +264,7 @@ class StatelessEstimator(HelicastBaseEstimator):
     ) -> Self:
         """Fit method used to ensure compatibility with the API. This class is
         stateless so this method does nothing."""
+        X, y = validate_X_y(self, X=X, y=y, mode=EstimatorMode.FIT)
         return self
 
 
@@ -275,29 +277,29 @@ def _get_class_name(obj: type | object) -> str:
         return str(obj)
 
 
+def check_is_not_a_class(obj: object) -> None:
+    if isinstance(obj, type):
+        raise TypeError(
+            f"{obj} is a class, not an instance. Please provide an instance."
+        )
+
+
 def is_stateless(obj: object) -> bool:
     """Returns ``True`` if ``obj`` is an instance of a stateless class, ``False``
     otherwise. ``obj`` needs to be an instance, not a class, otherwise a ``TypeError``
     is raised.
 
     An instance of a class is considered stateless if it has a
-    ``__helicast_is_stateless__`` attribute that is either (1) a callable that returns
-    boolean or (2) a boolean, **OR** if the class is a subclass of
-    ``StatelessEstimator``. If ``__helicast_is_stateless__`` does not return a boolean,
-    a ``TypeError`` is raised."""
+    ``__helicast_is_stateless__`` method that returns boolean , **OR** if the class is
+    a subclass of ``StatelessEstimator``. If ``__helicast_is_stateless__`` does not
+    return a boolean, a ``TypeError`` is raised."""
 
-    if isinstance(obj, type):
-        raise TypeError(
-            f"{obj} is a class, not an instance. Please provide an instance."
-        )
+    check_is_not_a_class(obj)
 
     class_name = _get_class_name(obj)
 
     if hasattr(obj, "__helicast_is_stateless__"):
-        if callable(obj.__helicast_is_stateless__):
-            result = obj.__helicast_is_stateless__()
-        else:
-            result = obj.__helicast_is_stateless__
+        result = obj.__helicast_is_stateless__()
 
         if not isinstance(result, bool):
             raise TypeError(
@@ -308,3 +310,11 @@ def is_stateless(obj: object) -> bool:
 
     # If the class is a subclass of StatelessEstimator, return True
     return isinstance(obj, StatelessEstimator)
+
+
+def is_fitted(obj: object) -> bool:
+    """Returns ``True`` if the estimator is fitted, ``False`` otherwise. This function
+    will call the ``__sklearn_is_fitted__`` method of the estimator."""
+    check_is_not_a_class(obj)
+
+    return obj.__sklearn_is_fitted__()
