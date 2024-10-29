@@ -275,26 +275,27 @@ def _get_class_name(obj: type | object) -> str:
         return str(obj)
 
 
-def is_stateless(obj: type | object) -> bool:
-    """Returns ``True`` if the ``obj`` is an instance of a stateless class or a
-    stateless class, ``False`` otherwise.
+def is_stateless(obj: object) -> bool:
+    """Returns ``True`` if ``obj`` is an instance of a stateless class, ``False``
+    otherwise. ``obj`` needs to be an instance, not a class, otherwise a ``TypeError``
+    is raised.
 
-    A class is considered stateless if it has a ``__helicast_is_stateless__`` attribute
-    that is either (1) a callable that returns boolean or (2) a boolean, **OR** if the
-    class is a subclass of ``StatelessEstimator``. The attribute
-    ``__helicast_is_stateless__`` is checked first.
+    An instance of a class is considered stateless if it has a
+    ``__helicast_is_stateless__`` attribute that is either (1) a callable that returns
+    boolean or (2) a boolean, **OR** if the class is a subclass of
+    ``StatelessEstimator``. If ``__helicast_is_stateless__`` does not return a boolean,
+    a ``TypeError`` is raised."""
 
-    If ``obj`` has a ``__helicast_is_stateless__`` attribute that is neither a boolean
-    nor a callable that returns a boolean, a ``TypeError`` is raised."""
+    if isinstance(obj, type):
+        raise TypeError(
+            f"{obj} is a class, not an instance. Please provide an instance."
+        )
 
     class_name = _get_class_name(obj)
 
     if hasattr(obj, "__helicast_is_stateless__"):
         if callable(obj.__helicast_is_stateless__):
-            if isinstance(obj, type):
-                result = obj.__helicast_is_stateless__(None)
-            else:
-                result = obj.__helicast_is_stateless__()
+            result = obj.__helicast_is_stateless__()
         else:
             result = obj.__helicast_is_stateless__
 
@@ -305,7 +306,5 @@ def is_stateless(obj: type | object) -> bool:
             )
         return result
 
-    if isinstance(obj, type):
-        return issubclass(obj, StatelessEstimator)
-    else:
-        return isinstance(obj, StatelessEstimator)
+    # If the class is a subclass of StatelessEstimator, return True
+    return isinstance(obj, StatelessEstimator)
